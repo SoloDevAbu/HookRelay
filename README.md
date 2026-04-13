@@ -1,159 +1,195 @@
-# Turborepo starter
+# 🚀 HookRelay
 
-This Turborepo starter is maintained by the Turborepo core team.
+> Reliable, scalable webhook delivery infrastructure for modern applications.
 
-## Using this example
+---
 
-Run the following command:
+## ✨ Overview
 
-```sh
-npx create-turbo@latest
+**HookRelay** is a high-performance webhook delivery system designed to handle event ingestion, fan-out, retries, and observability at scale.
+
+Instead of sending webhooks directly, systems send events to HookRelay — which ensures **reliable delivery** to all registered endpoints, even in the presence of failures.
+
+---
+
+## 🧠 Problem
+
+Sending webhooks sounds simple — until it isn't.
+
+* What if the receiver is down?
+* What if requests fail intermittently?
+* How do you retry without duplicating data?
+* How do you track delivery status?
+
+Most systems end up building:
+
+* Retry logic
+* Failure handling
+* Logging systems
+* Delivery tracking
+
+HookRelay solves all of this.
+
+---
+
+## ⚙️ How It Works
+
+```text
+Producer → HookRelay → Queue → Workers → Endpoints
 ```
 
-## What's inside?
+1. A client sends an event to HookRelay
+2. The system validates and stores it
+3. It fans out the event to multiple endpoints
+4. Delivery jobs are queued
+5. Workers process and send HTTP requests
+6. Failures are retried with exponential backoff
+7. Full logs and delivery status are recorded
 
-This Turborepo includes the following packages/apps:
+---
 
-### Apps and Packages
+## Features
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+* **High-throughput event ingestion**
+* **Reliable delivery with retries (exponential backoff)**
+* **Fan-out to multiple endpoints**
+* **HMAC-SHA256 request signing**
+* **Multi-tenant architecture**
+* **Idempotency support**
+* **Delivery logs & observability**
+* **Dead Letter Queue (DLQ) for failed deliveries**
+* **Circuit breaker for failing endpoints**
+* **Queue-based async processing (BullMQ)**
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+---
 
-### Utilities
+## Architecture
 
-This Turborepo has some additional tools already setup for you:
+* **API Layer** → Fastify (event ingestion & management)
+* **Workers** → Background processors for delivery & retries
+* **Queue** → BullMQ (Redis-backed job queue)
+* **Database** → PostgreSQL (Drizzle ORM)
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+---
 
-### Build
+## 📁 Project Structure
 
-To build all apps and packages, run the following command:
+```bash
+apps/
+  api/        # Fastify HTTP server
+  worker/     # Background workers
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+packages/
+  db/         # Database schema & queries (Drizzle)
+  queue/      # BullMQ queues
+  services/   # Core business logic
+  lib/        # Shared utilities
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+## Running Locally
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start all services
+docker-compose up
+
+# Run API
+pnpm run dev --filter=api
+
+# Run workers
+pnpm run dev --filter=worker
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## API Example
 
-```sh
-turbo build --filter=docs
+### Send Event
+
+```http
+POST /events
+Authorization: Bearer <API_KEY>
 ```
 
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```json
+{
+  "type": "order.created",
+  "payload": {
+    "orderId": "123",
+    "amount": 499
+  }
+}
 ```
 
-### Develop
+---
 
-To develop all apps and packages, run the following command:
+## Retry Strategy
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Retries follow exponential backoff:
 
-```sh
-cd my-turborepo
-turbo dev
+```text
+10s → 30s → 1m → 5m → 30m → 2h → 6h → 12h → 24h
 ```
 
-Without global `turbo`, use your package manager:
+After max attempts → moved to **Dead Letter Queue**
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
+---
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Observability
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+* Delivery logs
+* Attempt history
+* Success/failure tracking
+* Latency metrics
 
-```sh
-turbo dev --filter=web
-```
+---
 
-Without global `turbo`:
+## Benchmarks (Coming Soon)
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+Performance benchmarks will include:
 
-### Remote Caching
+* Requests per second (RPS)
+* Deliveries per second
+* Queue throughput
+* Retry behavior under failure
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+---
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## Tech Stack
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+* **Node.js + TypeScript**
+* **Fastify**
+* **BullMQ + Redis**
+* **PostgreSQL + Drizzle ORM**
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo login
-```
+## Inspiration
 
-Without global `turbo`, use your package manager:
+Built as a system design project inspired by real-world webhook infrastructures like those used by companies such as Stripe.
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
+---
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Future Improvements
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+* SDK for developers
+* Dashboard UI
+* Kafka-based queue support
+* Distributed tracing
+* Rate limiting per endpoint
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+---
 
-```sh
-turbo link
-```
+## Contributing
 
-Without global `turbo`:
+PRs are welcome! Feel free to open issues or suggest improvements.
 
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
+---
 
-## Useful Links
+## License
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+MIT
