@@ -1,0 +1,36 @@
+{
+    "extends": "../typescript-config/base.json",
+    "compilerOptions": {
+      "outDir": "dist",
+      "rootDir": "src",
+  
+      // Module settings (Node + modern tooling)
+      "module": "ESNext",
+      "moduleResolution": "Bundler",
+      "target": "ES2022",
+  
+      // Strictness (important for DB layer)
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "exactOptionalPropertyTypes": true,
+  
+      // Interop
+      "esModuleInterop": true,
+      "resolveJsonModule": true,
+  
+      // DX improvements
+      "skipLibCheck": true,
+  
+      // Declarations (important for reuse across apps)
+      "declaration": true,
+      "declarationMap": true,
+  
+      // Source maps for debugging
+      "sourceMap": true,
+  
+      // Base URL for internal imports
+      "baseUrl": "."
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist"]
+  }
