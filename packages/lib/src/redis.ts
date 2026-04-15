@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { config } from '@hookrelay/config';
+import { logger } from './logger';
 
 /**
  * Singleton instance of the Redis client
@@ -15,7 +16,7 @@ export const redis = new Redis(config.redisUrl, {
     },
 
     reconnectOnError(err: Error) {
-        const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT'];
+        const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'];
         if (targetErrors.some((e) => err.message.includes(e))) {
             return true;
         }
@@ -28,34 +29,34 @@ export const redis = new Redis(config.redisUrl, {
  */
 
 redis.on('connect', () => {
-    console.log('Redis connected');
-})
+    logger.info('Redis connected');
+});
 
 redis.on('ready', () => {
-    console.log('Redis ready');
-})
+    logger.info('Redis ready');
+});
 
 redis.on('error', (err: Error) => {
-    console.error('Redis error:', err);
+    logger.error({ err }, 'Redis error');
 });
 
 redis.on('reconnecting', () => {
-    console.log('Redis reconnecting');
+    logger.warn('Redis reconnecting');
 });
 
 redis.on('end', () => {
-    console.log('Redis end');
+    logger.info('Redis connection ended');
 });
 
 redis.on('close', () => {
-    console.warn('Redis closed');
+    logger.warn('Redis connection closed');
 });
 
-export const disconnectRedis = async () => {
+export const disconnectRedis = async (): Promise<void> => {
     try {
         await redis.quit();
+        logger.info('Redis disconnected gracefully');
     } catch (error) {
-        console.error('Error disconnecting Redis:', error);
-        throw error;
+        logger.error({ error }, 'Error during Redis disconnect');
     }
-}
+};

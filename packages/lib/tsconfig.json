@@ -1,15 +1,11 @@
 {
-    "extends": "@hookrelay/typescript-config/base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "esModuleInterop": true,
-        "resolveJsonModule": true,
-        "skipLibCheck": true,
-    },
-    "include": ["src"],
-    "exclude": ["node_modules", "dist"]
+  "extends": "@hookrelay/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+    // "moduleResolution": "bundler"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+  //   "type": "module"
 }

@@ -26,27 +26,27 @@ const redact = {
 const transport =
   config.nodeEnv === "development"
     ? {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:standard",
-          ignore: "pid,hostname",
-        },
-      }
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
+      },
+    }
     : undefined;
 
 /**
  * Logger instance
  */
 export const logger = pino({
-    level,
-    redact,
-    ...(transport ? { transport } : {})
+  level,
+  redact,
+  ...(transport ? { transport } : {})
 })
 
 /**
  * Helper to create child logger with context
  */
-export const createLogger = (context: Record<string, string>) => {
-    return logger.child(context);
+export const createLogger = (context: Record<string, unknown>) => {
+  return logger.child(context);
 }
