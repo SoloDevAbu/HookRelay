@@ -96,7 +96,11 @@ importers:
 
   apps/worker: {}
 
-  packages/config: {}
+  packages/config:
+    dependencies:
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
 
   packages/db:
     dependencies:
