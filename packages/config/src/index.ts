@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../.env')});
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 const REDIS_URL = process.env.REDIS_URL!;
@@ -17,9 +17,9 @@ export const config = {
     redisUrl: REDIS_URL,
     port: PORT,
     nodeEnv: NODE_ENV,
-    maxDeliveryAttempts: MAX_DELIVERY_ATTEMPTS,
-    deliveryTimeoutMs: DELIVERY_TIMEOUT_MS,
-    circuitBreakerThreshold: CIRCUIT_BREAKER_THRESHOLD,
-    circuitBreakerCooldownMs: CIRCUIT_BREAKER_COOLDOWN_MS,
-    rateLimitWindowMs: RATE_LIMIT_WINDOW_MS,
+    maxDeliveryAttempts: Number(MAX_DELIVERY_ATTEMPTS),
+    deliveryTimeoutMs: Number(DELIVERY_TIMEOUT_MS),
+    circuitBreakerThreshold: Number(CIRCUIT_BREAKER_THRESHOLD),
+    circuitBreakerCooldownMs: Number(CIRCUIT_BREAKER_COOLDOWN_MS),
+    rateLimitWindowMs: Number(RATE_LIMIT_WINDOW_MS),
 };
