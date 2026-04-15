@@ -1,8 +1,11 @@
 {
-  "name": "config",
+  "name": "@hookrelay/config",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,5 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@hookrelay/typescript-config": "workspace:*"
   }
 }

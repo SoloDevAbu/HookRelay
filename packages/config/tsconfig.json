@@ -2,13 +2,7 @@
     "extends": "@hookrelay/typescript-config/base.json",
     "compilerOptions": {
         "outDir": "dist",
-        "rootDir": "src",
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "esModuleInterop": true,
-        "resolveJsonModule": true,
-        "skipLibCheck": true,
+        "rootDir": "src"
     },
     "include": ["src"],
     "exclude": ["node_modules", "dist"]
