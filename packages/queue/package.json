@@ -8,5 +8,12 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@hookrelay/lib": "workspace:*",
+    "bullmq": "^5.74.1"
+  },
+  "devDependencies": {
+    "@hookrelay/typescript-config": "workspace:*"
+  }
 }
