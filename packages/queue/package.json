@@ -11,7 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "@hookrelay/lib": "workspace:*",
-    "bullmq": "^5.74.1"
+    "@hookrelay/config": "workspace:*",
+    "bullmq": "^5.74.1",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "@hookrelay/typescript-config": "workspace:*"

@@ -185,12 +185,18 @@ importers:
 
   packages/queue:
     dependencies:
+      '@hookrelay/config':
+        specifier: workspace:*
+        version: link:../config
       '@hookrelay/lib':
         specifier: workspace:*
         version: link:../lib
       bullmq:
         specifier: ^5.74.1
         version: 5.74.1
+      ioredis:
+        specifier: ^5.10.1
+        version: 5.10.1
     devDependencies:
       '@hookrelay/typescript-config':
         specifier: workspace:*
