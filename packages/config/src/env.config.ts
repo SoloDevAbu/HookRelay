@@ -11,6 +11,7 @@ const DELIVERY_TIMEOUT_MS = process.env.DELIVERY_TIMEOUT_MS;
 const CIRCUIT_BREAKER_THRESHOLD = process.env.CIRCUIT_BREAKER_THRESHOLD!;
 const CIRCUIT_BREAKER_COOLDOWN_MS = process.env.CIRCUIT_BREAKER_COOLDOWN_MS!;
 const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS!;
+const SIGNATURE_SECRET = process.env.SIGNATURE_SECRET!;
 
 export const config = {
     databaseUrl: DATABASE_URL,
@@ -22,4 +23,5 @@ export const config = {
     circuitBreakerThreshold: Number(CIRCUIT_BREAKER_THRESHOLD),
     circuitBreakerCooldownMs: Number(CIRCUIT_BREAKER_COOLDOWN_MS),
     rateLimitWindowMs: Number(RATE_LIMIT_WINDOW_MS),
+    signatureSecret: SIGNATURE_SECRET,
 };
