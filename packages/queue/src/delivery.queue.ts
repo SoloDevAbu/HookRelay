@@ -14,7 +14,7 @@ export interface DeliveryJobData {
  * @returns Return the delivery queue name for the specific tenant
  */
 export const getDeliveryQueueName = (tenantId: string): string => {
-    return `deliveries:${tenantId}`;
+    return `deliveries-${tenantId}`;
 }
 
 const queueCache = new Map<string, Queue<DeliveryJobData>>();
