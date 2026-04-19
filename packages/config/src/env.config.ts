@@ -1,27 +1,43 @@
-import dotenv from 'dotenv';
-import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+import { z } from "zod";
+import dotenv from "dotenv";
+import path from "path";
 
-const DATABASE_URL = process.env.DATABASE_URL!;
-const REDIS_URL = process.env.REDIS_URL!;
-const PORT = process.env.PORT!;
-const NODE_ENV = process.env.NODE_ENV!;
-const MAX_DELIVERY_ATTEMPTS = process.env.MAX_DELIVERY_ATTEMPTS!;
-const DELIVERY_TIMEOUT_MS = process.env.DELIVERY_TIMEOUT_MS;
-const CIRCUIT_BREAKER_THRESHOLD = process.env.CIRCUIT_BREAKER_THRESHOLD!;
-const CIRCUIT_BREAKER_COOLDOWN_MS = process.env.CIRCUIT_BREAKER_COOLDOWN_MS!;
-const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS!;
-const SIGNATURE_SECRET = process.env.SIGNATURE_SECRET!;
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+
+const envSchema = z.object({
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1),
+  PORT: z.string().default("3000"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
+  MAX_DELIVERY_ATTEMPTS: z.string().transform(Number),
+  DELIVERY_TIMEOUT_MS: z.string().transform(Number).default("30000"),
+  CIRCUIT_BREAKER_THRESHOLD: z.string().transform(Number).default("5"),
+  CIRCUIT_BREAKER_COOLDOWN_MS: z.string().transform(Number).default("60000"),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default("60000"),
+  SIGNATURE_SECRET: z.string().min(1),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error("Invalid environment variables:");
+  console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
 
 export const config = {
-    databaseUrl: DATABASE_URL,
-    redisUrl: REDIS_URL,
-    port: PORT,
-    nodeEnv: NODE_ENV,
-    maxDeliveryAttempts: Number(MAX_DELIVERY_ATTEMPTS),
-    deliveryTimeoutMs: Number(DELIVERY_TIMEOUT_MS),
-    circuitBreakerThreshold: Number(CIRCUIT_BREAKER_THRESHOLD),
-    circuitBreakerCooldownMs: Number(CIRCUIT_BREAKER_COOLDOWN_MS),
-    rateLimitWindowMs: Number(RATE_LIMIT_WINDOW_MS),
-    signatureSecret: SIGNATURE_SECRET,
-};
+  databaseUrl: parsed.data.DATABASE_URL,
+  redisUrl: parsed.data.REDIS_URL,
+  port: Number(parsed.data.PORT),
+  nodeEnv: parsed.data.NODE_ENV,
+  maxDeliveryAttempts: parsed.data.MAX_DELIVERY_ATTEMPTS,
+  deliveryTimeoutMs: parsed.data.DELIVERY_TIMEOUT_MS,
+  circuitBreakerThreshold: parsed.data.CIRCUIT_BREAKER_THRESHOLD,
+  circuitBreakerCooldownMs: parsed.data.CIRCUIT_BREAKER_COOLDOWN_MS,
+  rateLimitWindowMs: parsed.data.RATE_LIMIT_WINDOW_MS,
+  signatureSecret: parsed.data.SIGNATURE_SECRET,
+} as const;
+
+export type Config = typeof config;
