@@ -12,10 +12,10 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   MAX_DELIVERY_ATTEMPTS: z.string().transform(Number),
-  DELIVERY_TIMEOUT_MS: z.string().transform(Number).default("30000"),
-  CIRCUIT_BREAKER_THRESHOLD: z.string().transform(Number).default("5"),
-  CIRCUIT_BREAKER_COOLDOWN_MS: z.string().transform(Number).default("60000"),
-  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default("60000"),
+  DELIVERY_TIMEOUT_MS: z.string().transform(Number).default(30000),
+  CIRCUIT_BREAKER_THRESHOLD: z.string().transform(Number).default(5),
+  CIRCUIT_BREAKER_COOLDOWN_MS: z.string().transform(Number).default(60000),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default(60000),
   SIGNATURE_SECRET: z.string().min(1),
 });
 
