@@ -8,19 +8,19 @@ import crypto from "node:crypto";
  * @param body - The request body
  * @returns The signature
  */
-export const signPayload = (
-    secret: string,
-    timestamp: number,
-    body: string,
-): string => {
-    const signedContent = `${timestamp}.${body}`;
+export const signPayload = (input: {
+  secret: string;
+  timestamp: number;
+  body: string;
+}): string => {
+  const signedContent = `${input.timestamp}.${input.body}`;
 
-    const hash = crypto
-        .createHmac("sha256", secret)
-        .update(signedContent, "utf8")
-        .digest("hex");
+  const hash = crypto
+    .createHmac("sha256", input.secret)
+    .update(signedContent, "utf8")
+    .digest("hex");
 
-    return `sha256=${hash}`;
+  return `sha256=${hash}`;
 };
 
 /**
@@ -33,23 +33,23 @@ export const signPayload = (
  * @returns True if the signature is valid, false otherwise
  */
 export const verifySignature = (
-    secret: string,
-    timestamp: number,
-    body: string,
-    signature: string,
+  secret: string,
+  timestamp: number,
+  body: string,
+  signature: string,
 ): boolean => {
-    if (!signature || !signature.startsWith("sha256=")) {
-        return false;
-    }
+  if (!signature || !signature.startsWith("sha256=")) {
+    return false;
+  }
 
-    const expectedSignature = signPayload(secret, timestamp, body);
+  const expectedSignature = signPayload({ secret, timestamp, body });
 
-    const signatureBuffer = Buffer.from(signature);
-    const expectedSignatureBuffer = Buffer.from(expectedSignature);
+  const signatureBuffer = Buffer.from(signature);
+  const expectedSignatureBuffer = Buffer.from(expectedSignature);
 
-    if (signatureBuffer.length !== expectedSignatureBuffer.length) {
-        return false;
-    }
+  if (signatureBuffer.length !== expectedSignatureBuffer.length) {
+    return false;
+  }
 
-    return crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+  return crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
 };
