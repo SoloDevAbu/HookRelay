@@ -1,5 +1,5 @@
 import { db } from "../index";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt, sql } from "drizzle-orm";
 import type { Delivery, NewDelivery } from "../schema";
 import { deliveries } from "../schema";
 
@@ -126,4 +126,23 @@ export const findDeliveriesByTenant = async (
     .limit(options.limit ?? 100);
 
   return result;
+};
+
+/**
+ * Increment delivery attempt
+ * @returns attempt count
+ */
+export const incrementDeliveryAttempt = async (
+  deliveryId: string,
+): Promise<{ attemptCount: number } | undefined> => {
+  const result = await db
+    .update(deliveries)
+    .set({
+      attemptCount: sql`${deliveries.attemptCount} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(deliveries.id, deliveryId))
+    .returning({ attemptCount: deliveries.attemptCount });
+
+  return result[0];
 };
