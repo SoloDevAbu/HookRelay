@@ -93,8 +93,15 @@ export const shouldAllowRequest = async (
 
     if (elapsed >= config.circuitBreakerCooldownMs) {
       //Cooldown passed- try to acuire hald-open lock
+      const ttl = getTtlSeconds();
 
-      const lock = await redis.set(cbKeys.halfOpenLock(endpointId), "1", "NX");
+      const lock = await redis.set(
+        cbKeys.halfOpenLock(endpointId),
+        "1",
+        "EX",
+        ttl,
+        "NX",
+      );
 
       if (lock === "OK") {
         await redis.set(cbKeys.state(endpointId), "HALF-OPEN");
@@ -130,7 +137,7 @@ local stateKey = KEYS[2]
 local openedAtKey = KEYS[3]
 local threshold = tonumber(ARGV[1])
 local now = ARGV[2]
-local ttl = tonumber(ARV[3])
+local ttl = tonumber(ARGV[3])
 
 local failures = redis.call("INCR", failuresKey)
 local state = redis.call("GET", stateKey) or "CLOSED"
@@ -140,7 +147,7 @@ local state = redis.call("GET", stateKey) or "CLOSED"
 if failures >= threshold or state == "HALF-OPEN" then
  redis.call("SET", stateKey, "OPEN", "EX", ttl)
  redis.call("SET", openedAtKey, now, "EX", ttl)
- redis.call("EXPIRE", failuresKey, ttl),
+ redis.call("EXPIRE", failuresKey, ttl)
  return { failures, "OPEN"}
 end
 
