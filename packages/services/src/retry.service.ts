@@ -28,7 +28,7 @@ export const shouldDeadLetter = (attemptCount: number): boolean => {
  * @param attemptCount
  * @returns delay in milliseconds to wait before next retry
  */
-export const getBackoffDelay = (attemptCount: number): number => {
+export const getBackoffDelayMs = (attemptCount: number): number => {
   const index = Math.min(attemptCount - 1, BACKOFF_SCHEDULE_SECONDS.length - 1);
   const delaySeconds = BACKOFF_SCHEDULE_SECONDS[index] ?? 86400;
   const delayMs = delaySeconds * 1000;
@@ -43,6 +43,6 @@ export const getBackoffDelay = (attemptCount: number): number => {
  * @returns exact date when next retry should run
  */
 export const getNextRetryAt = (attemptCount: number): Date => {
-  const delayMs = getBackoffDelay(attemptCount);
+  const delayMs = getBackoffDelayMs(attemptCount);
   return new Date(Date.now() + delayMs);
 };

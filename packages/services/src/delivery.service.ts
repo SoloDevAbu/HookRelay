@@ -14,7 +14,7 @@ import {
 } from "./curcuit-breaker.service";
 import {
   shouldDeadLetter,
-  getBackoffDelay,
+  getBackoffDelayMs,
   getNextRetryAt,
 } from "./retry.service";
 import { signPayload } from "./signature.service";
@@ -139,7 +139,10 @@ export const deliverEvent = async (
   const signature = signPayload({
     secret: endpoint.secret,
     timestamp,
-    body: typeof event.payload === 'string' ? event.payload : JSON.stringify(event.payload),
+    body:
+      typeof event.payload === "string"
+        ? event.payload
+        : JSON.stringify(event.payload),
   });
 
   const headers: Record<string, string> = {
@@ -162,10 +165,12 @@ export const deliverEvent = async (
     responseBody = result.responseBody;
     latencyMs = result.latencyMs;
 
-    success = statusCode !== undefined ? (statusCode >= 200 && statusCode < 300) : false;
+    success =
+      statusCode !== undefined ? statusCode >= 200 && statusCode < 300 : false;
   } catch (error) {
     latencyMs = error instanceof HttpClientError ? error.latencyMs : 0;
-    isTimeout = error instanceof HttpClientError ? (error.isTimeout ?? false) : false;
+    isTimeout =
+      error instanceof HttpClientError ? (error.isTimeout ?? false) : false;
     errorMessage = error instanceof Error ? error.message : "Unknows Error";
     success = false;
   }
@@ -225,7 +230,7 @@ export const deliverEvent = async (
   }
 
   //Schedule retry
-  const delayMs = getBackoffDelay(attemptCount);
+  const delayMs = getBackoffDelayMs(attemptCount);
   const nextRetryAt = getNextRetryAt(attemptCount);
 
   await updateDeliveryStatus(deliveryId, {

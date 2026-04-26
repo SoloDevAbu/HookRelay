@@ -50,11 +50,13 @@ export const buildDeliveryJobs = (
 
 /**
  * Fanout event
+ * @param FanoutInput
  * - fetch event from DB
  * - resolve matching active endpoint for tenant + event type
  * - if no endpoint - skip
  * - batch insert ove delivery row per endpoint
  * - bulk enqueue one delivery job per endpoint
+ * @returns FanoutResult
  */
 
 export const fanoutEvent = async (
