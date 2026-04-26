@@ -6,5 +6,6 @@ export {
   getDeliveryQueue,
   closeAllDeliveryQueues,
 } from "./delivery.queue";
+export { pubsubPublisher, pubsubSubscriber, WORKER_CHANNEL } from "./pubsub";
 export type { DeliveryJobData } from "./delivery.queue";
 export * from "./constants";

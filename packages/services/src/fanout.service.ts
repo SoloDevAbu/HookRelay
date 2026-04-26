@@ -3,7 +3,11 @@ import {
   batchInsertDeliveries,
   findEndpointsByTenantIdAndEventType,
 } from "@hookrelay/db";
-import { getDeliveryQueue } from "@hookrelay/queue";
+import {
+  getDeliveryQueue,
+  pubsubPublisher,
+  WORKER_CHANNEL,
+} from "@hookrelay/queue";
 import { logger } from "@hookrelay/lib";
 import type { Endpoint } from "@hookrelay/db";
 
@@ -112,6 +116,8 @@ export const fanoutEvent = async (
   );
 
   await deliveryQueue.addBulk(jobs);
+
+  await pubsubPublisher.publish(WORKER_CHANNEL, JSON.stringify({ tenantId }));
 
   childLogger.info({ jobCount: jobs.length }, "Delivery jobs enqueued");
 
