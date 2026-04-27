@@ -90,6 +90,23 @@ export const markDeliveryDead = async (deliveryId: string): Promise<void> => {
 };
 
 /**
+ * Find Deliveries by id
+ * @param deliveryId
+ * @param
+ * @returns delivery
+ */
+export const findDeliveryById = async (
+  deliveryId: string,
+): Promise<Delivery> => {
+  const result = await db
+    .select()
+    .from(deliveries)
+    .where(eq(deliveries.id, deliveryId));
+
+  return result[0]! ?? null;
+};
+
+/**
  * Find deliveries by tenant
  */
 
