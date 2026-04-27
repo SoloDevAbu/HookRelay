@@ -17,6 +17,8 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
 
+  ADMIN_SECRET: z.string().min(32),
+
   MAX_DELIVERY_ATTEMPTS: z.coerce.number().int().positive().default(10),
 
   DELIVERY_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
@@ -56,6 +58,7 @@ export const config = Object.freeze({
   redisUrl: parsed.data.REDIS_URL,
   port: parsed.data.PORT,
   nodeEnv: parsed.data.NODE_ENV,
+  adminSecret: parsed.data.ADMIN_SECRET,
   maxDeliveryAttempts: parsed.data.MAX_DELIVERY_ATTEMPTS,
   deliveryTimeoutMs: parsed.data.DELIVERY_TIMEOUT_MS,
   circuitBreakerThreshold: parsed.data.CIRCUIT_BREAKER_THRESHOLD,
