@@ -6,7 +6,7 @@ import { sendSuccess } from "../lib/response";
 
 export const eventsRoutes = async (app: FastifyInstance): Promise<void> => {
   app.post(
-    "./events",
+    "/events",
     {
       preHandler: [tenantAuth, rateLimitMiddleware],
       schema: {
@@ -16,7 +16,7 @@ export const eventsRoutes = async (app: FastifyInstance): Promise<void> => {
           properties: {
             eventType: { type: "string", minLength: 1, maxLength: 100 },
             payload: { type: "object" },
-            idempotencyKey: { type: "string", maxlength: 255 },
+            idempotencyKey: { type: "string", maxLength: 255 },
           },
         },
       },

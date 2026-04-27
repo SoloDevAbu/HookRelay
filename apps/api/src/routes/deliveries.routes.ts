@@ -24,17 +24,15 @@ export const deliveriesRoutes = async (app: FastifyInstance): Promise<void> => {
       },
     },
     async (request, reply) => {
-      const { status, limit: offset } = request.query as {
+      const { status, limit, offset } = request.query as {
         status?: string;
         limit: number;
         offset: number;
       };
 
-      const deliveries = await findDeliveriesByTenant({
-        tenantId: request.tenant.id,
-        status,
+      const deliveries = await findDeliveriesByTenant(request.tenant.id, {
+        status: status as "pending" | "success" | "failed" | undefined,
         limit,
-        offset,
       });
 
       return sendSuccess(reply, { deliveries }, 200);

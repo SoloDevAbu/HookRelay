@@ -25,7 +25,7 @@ export const endpointRoutes = async (app: FastifyInstance): Promise<void> => {
   );
 
   app.post(
-    "./endpoints",
+    "/endpoints",
     {
       preHandler: [tenantAuth],
       schema: {
