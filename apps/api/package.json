@@ -8,5 +8,17 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@hookrelay/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5",
+    "@hookrelay/db": "workspace:*",
+    "@hookrelay/config": "workspace:*",
+    "@hookrelay/lib": "workspace:*",
+    "@hookrelay/services": "workspace:*",
+    "@hookrelay/queue": "workspace:*"
+  }
 }
