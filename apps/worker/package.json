@@ -4,20 +4,22 @@
   "description": "",
   "main": "./src/index.ts",
   "scripts": {
+    "dev": "tsx watch src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@hookrelay/db": "workspace:*",
     "@hookrelay/lib": "workspace:*",
     "@hookrelay/queue": "workspace:*",
     "@hookrelay/services": "workspace:*",
-    "@hookrelay/db": "workspace:*",
     "bullmq": "^5.74.1"
   },
   "devDependencies": {
     "@hookrelay/typescript-config": "workspace:*",
-    "@types/node": "^22.15.3"
+    "@types/node": "^22.15.3",
+    "tsx": "^4.21.0"
   }
 }
