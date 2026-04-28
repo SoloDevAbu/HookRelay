@@ -12,7 +12,7 @@ export const eventsRoutes = async (app: FastifyInstance): Promise<void> => {
       schema: {
         body: {
           type: "object",
-          required: ["eventId", "payload"],
+          required: ["eventType", "payload"],
           properties: {
             eventType: { type: "string", minLength: 1, maxLength: 100 },
             payload: { type: "object" },
