@@ -4,7 +4,7 @@ import path from "path";
 
 // Only load .env in development
 if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+  dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 }
 
 const envSchema = z.object({

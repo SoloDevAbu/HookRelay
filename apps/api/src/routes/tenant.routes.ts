@@ -42,7 +42,7 @@ export const tenantRoutes = async (app: FastifyInstance): Promise<void> => {
             rateLimitPerMin: rateLimitPerMin,
             createdAt: tenant.createdAt,
           },
-          apiKeyHash: rawApiKey,
+          apiKey: rawApiKey,
           warning: "Store this API safely. It will never be showing again.",
         },
         201,

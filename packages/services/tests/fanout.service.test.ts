@@ -77,7 +77,7 @@ describe("buildDeliveryJobs", () => {
       mockEndpoints[0],
     ] as any);
 
-    expect(jobs[0].opts.jobId).toBe("event-1:endpoint-1");
+    expect(jobs[0].opts.jobId).toBe("event-1_endpoint-1");
   });
 
   it("should return empty array for empty endpoints", () => {

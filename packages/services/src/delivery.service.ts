@@ -128,7 +128,7 @@ export const deliverEvent = async (
       { deliveryId, endpointId, eventId, tenantId },
       {
         delay: 30_000, //check again in 30 seconds
-        jobId: `${deliveryId}:cb:${Date.now()}`,
+        jobId: `${deliveryId}_cb_${Date.now()}`,
       },
     );
 
@@ -244,7 +244,7 @@ export const deliverEvent = async (
     { deliveryId, endpointId, eventId, tenantId },
     {
       delay: delayMs,
-      jobId: `${deliveryId}:attempt:${attemptCount}`,
+      jobId: `${deliveryId}_attempt_${attemptCount}`,
     },
   );
 
