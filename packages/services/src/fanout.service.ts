@@ -46,7 +46,7 @@ export const buildDeliveryJobs = (
         tenantId,
       },
       opts: {
-        jobId: `${eventId}:${endpoint.id}`,
+        jobId: `${eventId}_${endpoint.id}`,
       },
     };
   });

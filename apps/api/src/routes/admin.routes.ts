@@ -46,7 +46,7 @@ export const adminRoutes = async (app: FastifyInstance): Promise<void> => {
           tenantId: delivery.tenantId,
         },
         {
-          jobId: `${delivery.id}:manual-retry:${Date.now()}`,
+          jobId: `${delivery.id}_manual-retry_${Date.now()}`,
         },
       );
 
