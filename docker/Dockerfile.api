@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────
+# 1. Dependencies (with dev deps)
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/*/package.json ./packages/*/
+
+RUN pnpm install --frozen-lockfile
+
+# ─────────────────────────────────────────
+# 2. Builder (compile TS)
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN corepack enable
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build everything needed
+RUN pnpm --filter ./packages/... build
+RUN pnpm --filter ./apps/api build
+
+# ─────────────────────────────────────────
+# 3. Runner (production only)
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN corepack enable
+
+# Copy only manifests
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/*/package.json ./packages/*/
+
+# Install only production deps (CRITICAL FIX)
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built output
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages ./packages
+
+# Security
+RUN addgroup -S hookrelay && adduser -S hookrelay -G hookrelay
+USER hookrelay
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "apps/api/dist/main.js"]

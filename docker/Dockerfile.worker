@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────
+# 1. Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/worker/package.json ./apps/worker/
+COPY packages/*/package.json ./packages/*/
+
+RUN pnpm install --frozen-lockfile
+
+# ─────────────────────────────────────────
+# 2. Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN corepack enable
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN pnpm --filter ./packages/... build
+RUN pnpm --filter ./apps/worker build
+
+# ─────────────────────────────────────────
+# 3. Runner
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN corepack enable
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/worker/package.json ./apps/worker/
+COPY packages/*/package.json ./packages/*/
+
+RUN pnpm install --prod --frozen-lockfile
+
+COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
+COPY --from=builder /app/packages ./packages
+
+RUN addgroup -S hookrelay && adduser -S hookrelay -G hookrelay
+USER hookrelay
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "require('ioredis').createClient(process.env.REDIS_URL).ping().then(() => process.exit(0)).catch(() => process.exit(1))"
+
+CMD ["node", "apps/worker/dist/main.js"]

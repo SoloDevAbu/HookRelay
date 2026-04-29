@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/.git
+**/.env
+**/dist
+**/*.test.ts
+**/*.spec.ts
+**/tests
+**/k6
+**/*.md
+**/.turbo
+**/coverage
