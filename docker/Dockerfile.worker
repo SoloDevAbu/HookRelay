@@ -1,40 +1,36 @@
-# ─────────────────────────────────────────
-# 1. Dependencies
+# 1. Pruner
+FROM node:20-alpine AS pruner
+WORKDIR /app
+RUN corepack enable
+COPY . .
+RUN pnpm dlx turbo prune @hookrelay/worker --docker
+
+# 2. Deps
 FROM node:20-alpine AS deps
 WORKDIR /app
 RUN corepack enable
-
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps/worker/package.json ./apps/worker/
-COPY packages/*/package.json ./packages/*/
-
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
-# ─────────────────────────────────────────
-# 2. Builder
+# 3. Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 RUN corepack enable
-
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=pruner /app/out/full/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @hookrelay/worker... build
 
-RUN pnpm --filter ./packages/... build
-RUN pnpm --filter ./apps/worker build
-
-# ─────────────────────────────────────────
-# 3. Runner
+# 4. Runner — production only
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN corepack enable
-
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps/worker/package.json ./apps/worker/
-COPY packages/*/package.json ./packages/*/
-
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --prod --frozen-lockfile
-
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
 COPY --from=builder /app/packages ./packages
 
