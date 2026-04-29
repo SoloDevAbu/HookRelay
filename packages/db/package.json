@@ -2,8 +2,13 @@
   "name": "@hookrelay/db",
   "version": "1.0.0",
   "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "test": "vitest run",
@@ -25,6 +30,7 @@
     "@types/node": "^22.15.3",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "@hookrelay/typescript-config": "workspace:*"
   }
 }
