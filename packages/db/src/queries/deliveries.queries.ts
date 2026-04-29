@@ -159,7 +159,7 @@ export const incrementDeliveryAttempt = async (
       updatedAt: new Date(),
     })
     .where(eq(deliveries.id, deliveryId))
-    .returning({ attemptCount: deliveries.attemptCount });
+    .returning();
 
   return result[0];
 };
