@@ -38,7 +38,7 @@ export const eventsRoutes = async (app: FastifyInstance): Promise<void> => {
       return sendSuccess(
         reply,
         {
-          eventid: result.eventId,
+          eventId: result.eventId,
           duplicate: result.duplicate,
           status: "accepted",
         },

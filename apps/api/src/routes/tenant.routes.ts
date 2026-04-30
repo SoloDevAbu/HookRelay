@@ -13,7 +13,7 @@ export const tenantRoutes = async (app: FastifyInstance): Promise<void> => {
           required: ["name"],
           properties: {
             name: { type: "string", minLength: 1, maxLength: 100 },
-            rateLimitPerMin: { type: "number", minimum: 1, maximum: 10000 },
+            rateLimitPerMin: { type: "number", minimum: 1, maximum: 100000 },
           },
         },
       },
