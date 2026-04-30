@@ -105,3 +105,21 @@ export const findEventsWithNoDeliveries = async (input: {
       ),
     );
 };
+
+/**
+ * Batch insert events — single query for multiple events
+ * Returns only the events that were actually created (not duplicates)
+ */
+export const batchCreateEvents = async (
+  data: NewEvent[],
+): Promise<Event[]> => {
+  if (data.length === 0) return [];
+
+  const result = await db
+    .insert(events)
+    .values(data)
+    .onConflictDoNothing()
+    .returning();
+
+  return result;
+};

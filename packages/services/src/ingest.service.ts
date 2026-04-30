@@ -1,4 +1,4 @@
-import { createEvent, findEventsWithNoDeliveries } from "@hookrelay/db";
+import { findEventsWithNoDeliveries } from "@hookrelay/db";
 import { fanoutQueue } from "@hookrelay/queue";
 import { redis, logger } from "@hookrelay/lib";
 import { randomUUID } from "crypto";
@@ -15,6 +15,8 @@ export interface IngestEventResult {
   duplicate: boolean;
 }
 
+export const INGEST_BUFFER_KEY = "hookrelay:ingest_buffer";
+
 const IDEMPOTENCY_TTL_SECONDS = 86400;
 
 const idempotencyRedisKey = (tenantId: string, key: string): string => {
@@ -28,15 +30,6 @@ const checkIdempotency = async (
   const redisKey = idempotencyRedisKey(tenantId, idempotencyKey);
   const existingEventId = await redis.get(redisKey);
   return existingEventId;
-};
-
-const setIdempotencyKey = async (
-  tenantId: string,
-  idempotencyKey: string,
-  eventId: string,
-): Promise<void> => {
-  const redisKey = idempotencyRedisKey(tenantId, idempotencyKey);
-  await redis.set(redisKey, eventId, "EX", IDEMPOTENCY_TTL_SECONDS);
 };
 
 export const enqueueFanoutJob = async (
@@ -73,42 +66,17 @@ export const ingestEvent = async (
   // Pre-generate event ID so we can return it immediately
   const eventId = randomUUID();
 
-  // Fire-and-forget: DB insert + enqueue happen after response
-  // I need to change this with Write the event to a Redis stream/list first, respond 202, then have a background process flush to Postgres in batches
-  setImmediate(async () => {
-    try {
-      const { wasCreated } = await createEvent({
-        id: eventId,
-        tenantId,
-        eventType,
-        payload,
-        idempotencyKey,
-      });
-
-      if (!wasCreated) {
-        // Duplicate detected at DB level — idempotency key was set but
-        // Redis cache was missed. Not critical since response already sent.
-        logger.debug(
-          { eventId, tenantId },
-          "DB-level duplicate detected in background",
-        );
-        return;
-      }
-
-      await enqueueFanoutJob(eventId, tenantId);
-
-      if (idempotencyKey) {
-        await setIdempotencyKey(tenantId, idempotencyKey, eventId);
-      }
-
-      logger.debug({ eventId, tenantId }, "Background ingestion completed");
-    } catch (error) {
-      logger.error(
-        { eventId, tenantId, error },
-        "Background ingestion failed — recovery worker will retry",
-      );
-    }
-  });
+  // Push to Redis buffer — worker will batch-flush to Postgres + fanout queue
+  await redis.lpush(
+    INGEST_BUFFER_KEY,
+    JSON.stringify({
+      id: eventId,
+      tenantId,
+      eventType,
+      payload,
+      idempotencyKey,
+    }),
+  );
 
   return { eventId, duplicate: false };
 };
