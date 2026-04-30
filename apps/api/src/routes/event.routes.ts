@@ -19,6 +19,36 @@ export const eventsRoutes = async (app: FastifyInstance): Promise<void> => {
             idempotencyKey: { type: "string", maxLength: 255 },
           },
         },
+        response: {
+          202: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  eventId: { type: "string" },
+                  duplicate: { type: "boolean" },
+                  status: { type: "string" },
+                },
+              },
+            },
+          },
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  eventId: { type: "string" },
+                  duplicate: { type: "boolean" },
+                  status: { type: "string" },
+                },
+              },
+            },
+          },
+        },
       },
     },
     async (request, reply) => {
