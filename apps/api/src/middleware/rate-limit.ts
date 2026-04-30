@@ -3,6 +3,17 @@ import { redis } from "@hookrelay/lib";
 import { config } from "@hookrelay/config";
 import { sendError } from "../lib/response";
 
+const RATE_LIMIT_LUA = `
+local key = KEYS[1]
+local limit = tonumber(ARGV[1])
+local window = tonumber(ARGV[2])
+local current = redis.call("INCR", key)
+if current == 1 then
+  redis.call("EXPIRE", key, window)
+end
+return current
+`;
+
 export const rateLimitMiddleware = async (
   request: FastifyRequest,
   reply: FastifyReply,
@@ -11,28 +22,29 @@ export const rateLimitMiddleware = async (
 
   if (!tenant) return;
 
-  const key = `ratelimit:${tenant.id}`;
   const now = Date.now();
   const window = config.rateLimitWindowMs;
   const limit = tenant.rateLimitPerMin;
+  const windowSeconds = Math.ceil(window / 1000);
 
-  const pipeline = redis.pipeline();
-  pipeline.zremrangebyscore(key, 0, now - window);
-  pipeline.zcard(key);
-  pipeline.zadd(key, now, now.toString());
-  pipeline.expire(key, Math.ceil(window / 1000));
+  // Fixed-window key rotates each window period
+  const windowKey = `ratelimit:${tenant.id}:${Math.floor(now / window)}`;
 
-  const results = await pipeline.exec();
-  const count = results?.[1]?.[1] as number;
+  const count = (await redis.eval(
+    RATE_LIMIT_LUA,
+    1,
+    windowKey,
+    limit,
+    windowSeconds,
+  )) as number;
 
-  if (count >= limit) {
-    const retryAfter = Math.ceil(window / 1000);
-    reply.header("retry-after", retryAfter.toString());
+  if (count > limit) {
+    reply.header("retry-after", windowSeconds.toString());
 
     return sendError(
       reply,
       "RATE_LIMIT",
-      `Rate limit exceeded. Try again in ${retryAfter}s`,
+      `Rate limit exceeded. Try again in ${windowSeconds}s`,
       429,
     );
   }

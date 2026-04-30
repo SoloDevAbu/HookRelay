@@ -12,6 +12,10 @@ export const buildServer = async () => {
   const app = Fastify({
     logger: false,
     trustProxy: true,
+    bodyLimit: 1_048_576,
+    routerOptions: {
+      caseSensitive: true,
+    },
   });
 
   app.setErrorHandler(errorHandler);
