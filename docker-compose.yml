@@ -66,6 +66,16 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  mock-server:
+    build:
+      context: ./apps/mock-server
+    container_name: hookrelay-mock
+    ports:
+      - "4000:4000"
+    environment:
+      FAILURE_RATE: 0.2
+      DELAY_MS: 50
+
   # Scale workers horizontally for load testing
   # docker compose up --scale worker=4
 
