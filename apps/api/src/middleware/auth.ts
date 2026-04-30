@@ -1,8 +1,12 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { findTenantByApiKeyHash } from "@hookrelay/db";
 import { config } from "@hookrelay/config";
+import { redis } from "@hookrelay/lib";
 import { hashApiKey } from "../lib/crypto";
 import { sendError } from "../lib/response";
+
+const TENANT_CACHE_TTL = 60; // seconds
+const tenantCacheKey = (hash: string) => `tenant:auth:${hash}`;
 
 export const tenantAuth = async (
   request: FastifyRequest,
@@ -15,7 +19,24 @@ export const tenantAuth = async (
   }
 
   const hash = hashApiKey(apiKey);
-  const tenant = await findTenantByApiKeyHash(hash);
+
+  const cached = await redis.get(tenantCacheKey(hash));
+  let tenant;
+
+  if (cached) {
+    tenant = JSON.parse(cached);
+  } else {
+    tenant = await findTenantByApiKeyHash(hash);
+    if (tenant) {
+      // Cache for subsequent requests — fire-and-forget
+      redis.set(
+        tenantCacheKey(hash),
+        JSON.stringify(tenant),
+        "EX",
+        TENANT_CACHE_TTL,
+      );
+    }
+  }
 
   if (!tenant) {
     return sendError(reply, "UNAUTHORIZED", "Invalid API key", 401);
