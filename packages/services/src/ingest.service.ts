@@ -1,6 +1,7 @@
 import { createEvent, findEventsWithNoDeliveries } from "@hookrelay/db";
 import { fanoutQueue } from "@hookrelay/queue";
 import { redis, logger } from "@hookrelay/lib";
+import { randomUUID } from "crypto";
 
 export interface IngestEvnetInput {
   tenantId: string;
@@ -56,58 +57,60 @@ export const ingestEvent = async (
 ): Promise<IngestEventResult> => {
   const { tenantId, eventType, payload, idempotencyKey } = input;
 
-  const childLogger = logger.child({ tenantId, eventType, idempotencyKey });
-
+  // Idempotency check stays in hot path (Redis only — fast)
   if (idempotencyKey) {
     const existingEventId = await checkIdempotency(tenantId, idempotencyKey);
 
     if (existingEventId) {
-      childLogger.info(
-        { existingEventId },
-        "Duplicate event detected via Redis idempotency check",
+      logger.debug(
+        { existingEventId, tenantId },
+        "Duplicate event detected via idempotency check",
       );
       return { eventId: existingEventId, duplicate: true };
     }
   }
 
-  const { event, wasCreated } = await createEvent({
-    tenantId,
-    eventType,
-    payload,
-    idempotencyKey,
+  // Pre-generate event ID so we can return it immediately
+  const eventId = randomUUID();
+
+  // Fire-and-forget: DB insert + enqueue happen after response
+  // I need to change this with Write the event to a Redis stream/list first, respond 202, then have a background process flush to Postgres in batches
+  setImmediate(async () => {
+    try {
+      const { wasCreated } = await createEvent({
+        id: eventId,
+        tenantId,
+        eventType,
+        payload,
+        idempotencyKey,
+      });
+
+      if (!wasCreated) {
+        // Duplicate detected at DB level — idempotency key was set but
+        // Redis cache was missed. Not critical since response already sent.
+        logger.debug(
+          { eventId, tenantId },
+          "DB-level duplicate detected in background",
+        );
+        return;
+      }
+
+      await enqueueFanoutJob(eventId, tenantId);
+
+      if (idempotencyKey) {
+        await setIdempotencyKey(tenantId, idempotencyKey, eventId);
+      }
+
+      logger.debug({ eventId, tenantId }, "Background ingestion completed");
+    } catch (error) {
+      logger.error(
+        { eventId, tenantId, error },
+        "Background ingestion failed — recovery worker will retry",
+      );
+    }
   });
 
-  if (!wasCreated) {
-    childLogger.info(
-      { eventId: event.id },
-      "Suplicate event detected in Postgres constraint",
-    );
-
-    if (idempotencyKey) {
-      await setIdempotencyKey(tenantId, idempotencyKey, event.id);
-    }
-
-    return { eventId: event.id, duplicate: true };
-  }
-  childLogger.info({ eventId: event.id }, "Event created");
-
-  if (idempotencyKey) {
-    await setIdempotencyKey(tenantId, idempotencyKey, event.id);
-  }
-
-  try {
-    await enqueueFanoutJob(event.id, tenantId);
-    childLogger.info({ eventId: event.id }, "Fanout job enqueued");
-  } catch (error) {
-    childLogger.error(
-      { eventId: event.id, error },
-      "Failed to enqueue fanout job, recovery worker will try",
-    );
-  }
-
-  childLogger.info({ eventId: event.id }, "Fanout job enqueued");
-
-  return { eventId: event.id, duplicate: false };
+  return { eventId, duplicate: false };
 };
 
 export const recoverUnfanoutEvents = async (): Promise<void> => {
