@@ -4,6 +4,7 @@ import {
   startDeliveryWorkerManager,
 } from "./workers/delivery.worker";
 import { createDlqWorker } from "./workers/dlq.worker";
+import { startIngestWorker, stopIngestWorker } from "./workers/ingest.worker";
 import {
   bullmqRedis,
   pubsubSubscriber,
@@ -17,6 +18,7 @@ const start = async (): Promise<void> => {
   const fanoutWorker = createFanoutWorker();
   const dlqWorker = createDlqWorker();
   await startDeliveryWorkerManager();
+  startIngestWorker();
 
   logger.info("All workers started successfully");
 
@@ -24,6 +26,8 @@ const start = async (): Promise<void> => {
     logger.info({ signal }, "Shutdown signal received — draining workers");
 
     try {
+      stopIngestWorker();
+
       await Promise.all([
         fanoutWorker.close(),
         dlqWorker.close(),
