@@ -16,7 +16,12 @@ const db = isNeon
       schema,
     })
   : drizzleNode({
-      client: new Pool({ connectionString: DATABASE_URL }),
+      client: new Pool({
+        connectionString: DATABASE_URL,
+        max: 50,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 5_000,
+      }),
       schema,
     });
 
