@@ -1,0 +1,20 @@
+{
+  "name": "@hookrelay/sdk",
+  "version": "1.0.0",
+  "description": "SDK for HookRelay API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@hookrelay/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3"
+  }
+}

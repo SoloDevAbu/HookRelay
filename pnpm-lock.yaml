@@ -284,6 +284,15 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
 
+  packages/sdk:
+    devDependencies:
+      '@hookrelay/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.19.17
+
   packages/services:
     dependencies:
       '@hookrelay/config':
