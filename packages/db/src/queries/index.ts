@@ -4,3 +4,4 @@ export * from './endpoints.queries';
 export * from './events.queries';
 export * from './tenants.queries';
 export * from './observability.queries';
+export * from './users.queries';

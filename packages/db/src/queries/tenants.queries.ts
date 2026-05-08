@@ -31,6 +31,17 @@ export const findTenantById = async (id: string): Promise<Tenant | null> => {
 }
 
 /**
+ * Find all tenants owned by a user
+ * Used in the web dashboard tenant list
+ */
+export const findTenantsByUserId = async (userId: string): Promise<Tenant[]> => {
+    return db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.userId, userId));
+};
+
+/**
  * Create a new tenant
  */
 

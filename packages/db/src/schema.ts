@@ -37,12 +37,30 @@ import {
   ]);
   
   // ─────────────────────────────────────────
+  // USERS
+  // ─────────────────────────────────────────
+  
+  export const users = pgTable("users", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  });
+  
+  // ─────────────────────────────────────────
   // TENANTS
   // ─────────────────────────────────────────
   
   export const tenants = pgTable("tenants", {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
+  
+    // owner — every tenant must belong to a user
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
   
     // we never store raw API key, only a SHA-256 hash of it
     // on every request we hash the incoming key and compare
@@ -225,6 +243,9 @@ import {
   // ─────────────────────────────────────────
   // EXPORTED TYPES
   // ─────────────────────────────────────────
+  
+  export type User = typeof users.$inferSelect;
+  export type NewUser = typeof users.$inferInsert;
   
   export type Tenant = typeof tenants.$inferSelect;
   export type NewTenant = typeof tenants.$inferInsert;
