@@ -12,10 +12,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookrelay/db": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",
     "axios": "^1.16.0",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.3",
     "next": "16.1.7",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
