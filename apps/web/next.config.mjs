@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  serverExternalPackages: ["pg", "@neondatabase/serverless", "bcryptjs"],
+};
 
-export default nextConfig
+export default nextConfig;
