@@ -10,8 +10,9 @@ export const tenantRoutes = async (app: FastifyInstance): Promise<void> => {
       schema: {
         body: {
           type: "object",
-          required: ["name"],
+          required: ["userId", "name"],
           properties: {
+            userId: { type: "string", minLength: 1, maxLength: 100 },
             name: { type: "string", minLength: 1, maxLength: 100 },
             rateLimitPerMin: { type: "number", minimum: 1, maximum: 100000 },
           },
@@ -19,7 +20,8 @@ export const tenantRoutes = async (app: FastifyInstance): Promise<void> => {
       },
     },
     async (request, reply) => {
-      const { name, rateLimitPerMin } = request.body as {
+      const { userId, name, rateLimitPerMin } = request.body as {
+        userId: string;
         name: string;
         rateLimitPerMin?: number;
       };
@@ -28,6 +30,7 @@ export const tenantRoutes = async (app: FastifyInstance): Promise<void> => {
       const apiKeyHash = hashApiKey(rawApiKey);
 
       const tenant = await createTenant({
+        userId,
         name,
         apiKeyHash,
         rateLimitPerMin: rateLimitPerMin ?? 1000,
