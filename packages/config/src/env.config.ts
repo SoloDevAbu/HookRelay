@@ -11,7 +11,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
 
-  PORT: z.coerce.number().default(3000),
+  API_PORT: z.coerce.number().default(3000),
 
   NODE_ENV: z
     .enum(["development", "production", "test"])
@@ -56,7 +56,7 @@ if (!parsed.success) {
 export const config = Object.freeze({
   databaseUrl: parsed.data.DATABASE_URL,
   redisUrl: parsed.data.REDIS_URL,
-  port: parsed.data.PORT,
+  apiPort: parsed.data.API_PORT,
   nodeEnv: parsed.data.NODE_ENV,
   adminSecret: parsed.data.ADMIN_SECRET,
   maxDeliveryAttempts: parsed.data.MAX_DELIVERY_ATTEMPTS,

@@ -7,11 +7,11 @@ const start = async (): Promise<void> => {
   const app = await buildServer();
 
   await app.listen({
-    port: config.port,
+    port: config.apiPort,
     host: "0.0.0.0",
   });
 
-  logger.info({ port: config.port }, "API seriver started");
+  logger.info({ apiPort: config.apiPort }, "API seriver started");
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info({ signal }, "Shutdown signal received");

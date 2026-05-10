@@ -282,7 +282,7 @@ Edit `.env` with your local service URLs:
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hookrelay
 REDIS_URL=redis://localhost:6379
-PORT=3000
+API_PORT=8080
 NODE_ENV=development
 ADMIN_SECRET=your-admin-secret-min-32-characters-long
 SIGNATURE_SECRET=your-signature-secret-min-32-characters
@@ -326,7 +326,7 @@ All configuration is managed through environment variables, validated at startup
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | (required) |
 | `REDIS_URL` | Redis connection string | (required) |
-| `PORT` | API server port | `3000` |
+| `PORT` | API server port | `8080` |
 | `NODE_ENV` | `development`, `production`, or `test` | `development` |
 | `ADMIN_SECRET` | Secret for admin API endpoints (min 32 chars) | (required) |
 | `MAX_DELIVERY_ATTEMPTS` | Max delivery attempts before DLQ | `10` |
