@@ -2,7 +2,7 @@
   "name": "@hookrelay/api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
