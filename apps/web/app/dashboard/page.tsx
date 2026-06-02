@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
   async function onSubmit(values: z.infer<typeof createTenantSchema>) {
     try {
-      const res = await createTenant({ name: values.name, rateLimitPerMin: 60 });
+      const res = await createTenant({ name: values.name, rateLimitPerMin: 100000 });
       setNewKeyData({ apiKey: res.apiKey, warning: res.warning });
       toast.success("Tenant created successfully");
       reset();
