@@ -10,10 +10,11 @@ overrides:
 importers:
 
   .:
-    devDependencies:
+    dependencies:
       concurrently:
         specifier: ^10.0.3
         version: 10.0.3
+    devDependencies:
       prettier:
         specifier: ^3.7.4
         version: 3.8.3
