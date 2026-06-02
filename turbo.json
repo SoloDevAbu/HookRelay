@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["DATABASE_URL"],
+  "globalEnv": ["DATABASE_URL", "ADMIN_SECRET", "JWT_SECRET", "NODE_ENV", "FASTIFY_API_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
