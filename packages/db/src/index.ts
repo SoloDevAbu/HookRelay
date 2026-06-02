@@ -4,13 +4,10 @@ import { neon } from "@neondatabase/serverless";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-const DATABASE_URL = process.env.DATABASE_URL!;
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
 
 // Neon URLs contain "neon.tech" — use neon-http driver
 // Standard postgres URLs use node-postgres driver
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
-}
 const isNeon = DATABASE_URL.includes("neon.tech");
 
 const db = isNeon
