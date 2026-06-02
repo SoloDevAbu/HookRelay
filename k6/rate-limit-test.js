@@ -18,7 +18,7 @@ export const options = {
 
 export function setup() {
   const res = http.post(
-    "http://localhost:3000/tenants",
+    "http://localhost:8080/tenants",
     JSON.stringify({ name: "rate-limit-test", rateLimitPerMin: 100 }),
     { headers: { "Content-Type": "application/json" } },
   );
@@ -27,7 +27,7 @@ export function setup() {
 
 export default function (data) {
   const res = http.post(
-    "http://localhost:3000/events",
+    "http://localhost:8080/events",
     JSON.stringify({
       eventType: "test.event",
       payload: { test: true },

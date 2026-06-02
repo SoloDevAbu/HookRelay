@@ -41,7 +41,7 @@ export const options = {
   },
 };
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://localhost:8080";
 
 // ─────────────────────────────────────────
 // SETUP — runs once before all VUs start
@@ -50,23 +50,9 @@ const BASE_URL = "http://localhost:3000";
 // ─────────────────────────────────────────
 
 export function setup() {
-  // create tenant
-  const tenantRes = http.post(
-    `${BASE_URL}/tenants`,
-    JSON.stringify({
-      name: "k6-load-test-tenant5",
-      rateLimitPerMin: 100000,
-    }),
-    { headers: { "Content-Type": "application/json" } },
-  );
+  const apiKey = __ENV.API_KEY || "wh_live_10c6c6099d8ed6076f71f53131de0a79b7d76058d579c7de0044a145f967f13c";
+  const tenantId = "b5f4f9cf-3496-47b5-b442-d2b58e2d0637"; // since we use an existing tenant
 
-  check(tenantRes, {
-    "tenant created": (r) => r.status === 201,
-  });
-
-  const { data } = JSON.parse(tenantRes.body);
-  const apiKey = data.apiKey;
-  const tenantId = data.tenant.id;
 
   // create endpoint pointing to webhook.site or a local mock
   const endpointRes = http.post(
