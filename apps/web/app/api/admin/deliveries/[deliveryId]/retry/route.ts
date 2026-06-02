@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { requireSession } from "@/lib/session";
 import { okResponse, errResponse } from "@/lib/response";
 
-const FASTIFY_API_URL = process.env.FASTIFY_API_URL ?? "http://localhost:3000";
+const FASTIFY_API_URL = process.env.FASTIFY_API_URL ?? "http://localhost:8080";
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 
 type Params = { params: Promise<{ deliveryId: string }> };
