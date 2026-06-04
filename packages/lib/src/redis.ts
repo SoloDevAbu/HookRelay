@@ -9,6 +9,7 @@ import { logger } from "./logger";
 export const redis = new Redis(config.redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
+  keepAlive: 10000,
 
   retryStrategy(times: number) {
     const delay = Math.min(times * 50, 500);

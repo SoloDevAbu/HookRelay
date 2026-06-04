@@ -90,12 +90,12 @@ HookRelay accepts events from producers via a REST API, fans them out to registe
 
 ### Database schema
 
-| Table | Purpose |
-|-------|---------|
-| `tenants` | Multi-tenant accounts with API key hashes and rate limits |
-| `endpoints` | Registered webhook URLs per tenant with secrets, filters, and status |
-| `events` | Ingested events with payloads and idempotency keys |
-| `deliveries` | One row per event-endpoint pair tracking status and retry state |
+| Table               | Purpose                                                               |
+| ------------------- | --------------------------------------------------------------------- |
+| `tenants`           | Multi-tenant accounts with API key hashes and rate limits             |
+| `endpoints`         | Registered webhook URLs per tenant with secrets, filters, and status  |
+| `events`            | Ingested events with payloads and idempotency keys                    |
+| `deliveries`        | One row per event-endpoint pair tracking status and retry state       |
 | `delivery_attempts` | Audit log of every HTTP call made, including status codes and latency |
 
 ---
@@ -106,40 +106,40 @@ Tested with [k6](https://k6.io/) on a single machine running Docker Desktop. 200
 
 ### Ingestion throughput
 
-| Metric | Value |
-|--------|-------|
-| Throughput | **1,259 req/s** |
-| Total requests (5 min) | **377,843** |
-| p50 latency | **73 ms** |
-| p90 latency | **141 ms** |
-| p95 latency | **166 ms** |
-| p99 latency | **~400 ms** |
-| Max latency | **1,010 ms** |
-| Error rate (>500ms) | **0.12%** |
-| HTTP failure rate | **0.00%** |
+| Metric                 | Value           |
+| ---------------------- | --------------- |
+| Throughput             | **1,259 req/s** |
+| Total requests (5 min) | **377,843**     |
+| p50 latency            | **73 ms**       |
+| p90 latency            | **141 ms**      |
+| p95 latency            | **166 ms**      |
+| p99 latency            | **~400 ms**     |
+| Max latency            | **1,010 ms**    |
+| Error rate (>500ms)    | **0.12%**       |
+| HTTP failure rate      | **0.00%**       |
 
 ### Optimization history
 
-| Change | p50 | p95 | Error rate | Throughput |
-|--------|-----|-----|------------|------------|
-| Baseline | 247 ms | 709 ms | 22.71% | 342 req/s |
-| + Connection pool tuning (10 → 50) | — | — | — | — |
-| + Tenant auth Redis cache (60s TTL) | — | — | — | — |
-| + Lua atomic rate limiter | — | — | — | — |
-| + Async fire-and-forget ingestion | — | — | — | — |
-| + Fastify response schema | — | — | — | — |
-| + Reduced hot-path logging | 190 ms | 444 ms | 2.97% | 455 req/s |
-| + Redis buffer + batch DB insert | **73 ms** | **166 ms** | **0.12%** | **1,259 req/s** |
+| Change                              | p50       | p95        | Error rate | Throughput      |
+| ----------------------------------- | --------- | ---------- | ---------- | --------------- |
+| Baseline                            | 247 ms    | 709 ms     | 22.71%     | 342 req/s       |
+| + Connection pool tuning (10 → 50)  | —         | —          | —          | —               |
+| + Tenant auth Redis cache (60s TTL) | —         | —          | —          | —               |
+| + Lua atomic rate limiter           | —         | —          | —          | —               |
+| + Async fire-and-forget ingestion   | —         | —          | —          | —               |
+| + Fastify response schema           | —         | —          | —          | —               |
+| + Reduced hot-path logging          | 190 ms    | 444 ms     | 2.97%      | 455 req/s       |
+| + Redis buffer + batch DB insert    | **73 ms** | **166 ms** | **0.12%**  | **1,259 req/s** |
 
 ### Rate limiting
 
 Tested with 50 VUs over 30 seconds against a tenant with a 200 req/min limit:
 
-| Metric | Value |
-|--------|-------|
-| Accepted (200) | 200 |
-| Rate limited (429) | 30,443 |
-| All 429 responses include `Retry-After` header | Yes |
+| Metric                                         | Value  |
+| ---------------------------------------------- | ------ |
+| Accepted (200)                                 | 200    |
+| Rate limited (429)                             | 30,443 |
+| All 429 responses include `Retry-After` header | Yes    |
 
 ---
 
@@ -238,7 +238,7 @@ pnpm install
 pnpm --filter @hookrelay/db db:push
 ```
 
-The API is available at `http://localhost:3000`. The mock server (webhook target) listens on `http://localhost:4000`.
+The API is available at `http://localhost:8080`. The mock server (webhook target) listens on `http://localhost:4000`.
 
 To scale workers horizontally:
 
@@ -322,18 +322,18 @@ node apps/worker/dist/main.js   # Worker
 
 All configuration is managed through environment variables, validated at startup using [Zod](https://zod.dev/).
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | (required) |
-| `REDIS_URL` | Redis connection string | (required) |
-| `PORT` | API server port | `8080` |
-| `NODE_ENV` | `development`, `production`, or `test` | `development` |
-| `ADMIN_SECRET` | Secret for admin API endpoints (min 32 chars) | (required) |
-| `MAX_DELIVERY_ATTEMPTS` | Max delivery attempts before DLQ | `10` |
-| `DELIVERY_TIMEOUT_MS` | HTTP request timeout per delivery attempt | `30000` |
-| `CIRCUIT_BREAKER_THRESHOLD` | Consecutive failures before circuit opens | `5` |
-| `CIRCUIT_BREAKER_COOLDOWN_MS` | Time before half-open retry | `60000` |
-| `RATE_LIMIT_WINDOW_MS` | Rate limit window duration | `60000` |
+| Variable                      | Description                                   | Default       |
+| ----------------------------- | --------------------------------------------- | ------------- |
+| `DATABASE_URL`                | PostgreSQL connection string                  | (required)    |
+| `REDIS_URL`                   | Redis connection string                       | (required)    |
+| `PORT`                        | API server port                               | `8080`        |
+| `NODE_ENV`                    | `development`, `production`, or `test`        | `development` |
+| `ADMIN_SECRET`                | Secret for admin API endpoints (min 32 chars) | (required)    |
+| `MAX_DELIVERY_ATTEMPTS`       | Max delivery attempts before DLQ              | `10`          |
+| `DELIVERY_TIMEOUT_MS`         | HTTP request timeout per delivery attempt     | `30000`       |
+| `CIRCUIT_BREAKER_THRESHOLD`   | Consecutive failures before circuit opens     | `5`           |
+| `CIRCUIT_BREAKER_COOLDOWN_MS` | Time before half-open retry                   | `60000`       |
+| `RATE_LIMIT_WINDOW_MS`        | Rate limit window duration                    | `60000`       |
 
 ---
 
@@ -393,6 +393,7 @@ curl -X POST http://localhost:3000/events \
 ```
 
 Response codes:
+
 - `202` — Event accepted for processing
 - `200` — Duplicate event (idempotency key matched)
 - `429` — Rate limit exceeded (includes `Retry-After` header)
@@ -489,18 +490,18 @@ Event Ingested → Fanout → Delivery Created → HTTP Attempt → Success / Re
 
 Retries use a fixed backoff schedule:
 
-| Attempt | Delay |
-|---------|-------|
-| 1 | 10 seconds |
-| 2 | 30 seconds |
-| 3 | 1 minute |
-| 4 | 5 minutes |
-| 5 | 30 minutes |
-| 6 | 1 hour |
-| 7 | 3 hours |
-| 8 | 6 hours |
-| 9 | 12 hours |
-| 10 | 24 hours |
+| Attempt | Delay      |
+| ------- | ---------- |
+| 1       | 10 seconds |
+| 2       | 30 seconds |
+| 3       | 1 minute   |
+| 4       | 5 minutes  |
+| 5       | 30 minutes |
+| 6       | 1 hour     |
+| 7       | 3 hours    |
+| 8       | 6 hours    |
+| 9       | 12 hours   |
+| 10      | 24 hours   |
 
 After attempt 10, the delivery is moved to the dead letter queue.
 
@@ -557,20 +558,20 @@ The load test creates a tenant and endpoint during setup, then hammers `POST /ev
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Language | TypeScript (Node.js >= 18) |
-| API framework | Fastify 5 |
-| Job queue | BullMQ (Redis-backed) |
-| Database | PostgreSQL 16 |
-| ORM | Drizzle ORM |
-| Cache / Pub-sub | Redis 7 |
-| HTTP client | undici |
-| Logging | pino |
-| Config validation | Zod |
-| Build system | Turborepo + pnpm workspaces |
-| Containerization | Docker + Docker Compose |
-| Load testing | k6 (Grafana) |
+| Component         | Technology                  |
+| ----------------- | --------------------------- |
+| Language          | TypeScript (Node.js >= 18)  |
+| API framework     | Fastify 5                   |
+| Job queue         | BullMQ (Redis-backed)       |
+| Database          | PostgreSQL 16               |
+| ORM               | Drizzle ORM                 |
+| Cache / Pub-sub   | Redis 7                     |
+| HTTP client       | undici                      |
+| Logging           | pino                        |
+| Config validation | Zod                         |
+| Build system      | Turborepo + pnpm workspaces |
+| Containerization  | Docker + Docker Compose     |
+| Load testing      | k6 (Grafana)                |
 
 ---
 

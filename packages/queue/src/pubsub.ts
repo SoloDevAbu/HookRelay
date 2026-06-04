@@ -7,6 +7,7 @@ import { config } from "@hookrelay/config";
 export const pubsubSubscriber = new Redis(config.redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  keepAlive: 10000,
 });
 
 /**
@@ -15,6 +16,7 @@ export const pubsubSubscriber = new Redis(config.redisUrl, {
 export const pubsubPublisher = new Redis(config.redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  keepAlive: 10000,
 });
 
 export const WORKER_CHANNEL = "worker:new-tenant-queue";
