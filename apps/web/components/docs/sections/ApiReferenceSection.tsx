@@ -102,7 +102,7 @@ export function ApiReferenceSection() {
                 </span>
                 <div className="rounded border bg-muted/30 p-3 font-mono text-[9px] text-foreground/80">
                   <pre className="whitespace-pre-wrap select-all">{`curl -X POST http://localhost:3000/events \\
-  -H "X-Api-Key: hr_key_..." \\
+  -H "X-Api-Key: wh_live_..." \\
   -d '{
     "eventType": "order.placed",
     "payload": {"id": 12},

@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   PaperPlane,
   Terminal,
@@ -14,6 +15,275 @@ import {
   Gear,
   Circle,
 } from "@phosphor-icons/react";
+
+function DeliveryDiagram({ hoveredNode }: { hoveredNode: string | null }) {
+  const SRC = { x: 118, y: 130 };
+  const HUB_LEFT = { x: 218, y: 130 };
+  const HUB_RIGHT = { x: 282, y: 130 };
+  const DST = {
+    webhooks: { x: 382, y: 65 },
+    sqs: { x: 382, y: 130 },
+    db: { x: 382, y: 195 },
+  };
+
+  // Cubic bezier: horizontal control points for organic S-curves
+  const curve = (x1: number, y1: number, x2: number, y2: number) => {
+    const cx = (x1 + x2) / 2;
+    return `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
+  };
+
+  const inPath = {
+    d: curve(SRC.x, SRC.y, HUB_LEFT.x, HUB_LEFT.y),
+    color: "#3b82f6",
+  };
+
+  const outPaths = [
+    {
+      id: "webhooks",
+      d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.webhooks.x, DST.webhooks.y),
+      color: "#10b981",
+    },
+    {
+      id: "sqs",
+      d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.sqs.x, DST.sqs.y),
+      color: "#f59e0b",
+    },
+    {
+      id: "db",
+      d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.db.x, DST.db.y),
+      color: "#a855f7",
+    },
+  ] as const;
+
+  const destinations = [
+    {
+      id: "webhooks",
+      cx: 428,
+      cy: 65,
+      color: "#10b981",
+      icon: <Globe className="size-3.5" />,
+      label: "WEBHOOKS",
+    },
+    {
+      id: "sqs",
+      cx: 428,
+      cy: 130,
+      color: "#f59e0b",
+      icon: <Gear className="size-3.5" />,
+      label: "AWS SQS",
+    },
+    {
+      id: "db",
+      cx: 428,
+      cy: 195,
+      color: "#a855f7",
+      icon: <Database className="size-3.5" />,
+      label: "DATABASE",
+    },
+  ] as const;
+
+  return (
+    <div className="relative flex h-[260px] w-full items-center justify-center overflow-hidden">
+      {/* Background dot grid */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,hsl(var(--border))_1.2px,transparent_1.2px)] bg-[size:20px_20px] opacity-50" />
+
+      {/* Full-width SVG — viewBox matches coordinate system */}
+      <svg
+        viewBox="0 0 500 260"
+        className="absolute inset-0 size-full"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          {/* Soft glow filter for active lines */}
+          <filter id="glow-active" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* ── Inbound path (API → Hub) ── */}
+        <g>
+          <path
+            d={inPath.d}
+            fill="none"
+            stroke={inPath.color}
+            strokeWidth="1.5"
+            strokeOpacity="0.12"
+          />
+          <path
+            d={inPath.d}
+            fill="none"
+            stroke={inPath.color}
+            strokeWidth="2"
+            strokeOpacity="0.85"
+            strokeDasharray="5 16"
+            className="animate-dash"
+            filter="url(#glow-active)"
+          />
+        </g>
+
+        {/* ── Outbound paths (hub → destinations) ── */}
+        {outPaths.map((p) => {
+          const isActive = hoveredNode === null || hoveredNode === p.id;
+          return (
+            <g key={p.id}>
+              <path
+                d={p.d}
+                fill="none"
+                stroke={p.color}
+                strokeWidth="1.5"
+                strokeOpacity="0.12"
+              />
+              <path
+                d={p.d}
+                fill="none"
+                stroke={p.color}
+                strokeWidth={isActive ? "2" : "1.5"}
+                strokeOpacity={isActive ? "0.85" : "0.28"}
+                strokeDasharray="5 16"
+                className="animate-dash"
+                filter={isActive ? "url(#glow-active)" : undefined}
+              />
+            </g>
+          );
+        })}
+
+        {/* ── Source pill (foreignObject) ── */}
+        <foreignObject x={0} y={130 - 14} width="144" height="28">
+          <div
+            // @ts-expect-error xmlns needed for foreignObject
+            xmlns="http://www.w3.org/1999/xhtml"
+            className="flex h-full items-center justify-center"
+          >
+            <div className="flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-background/95 px-2.5 py-1 shadow-sm backdrop-blur-sm">
+              <span className="text-blue-600">
+                <Terminal className="size-4" />
+              </span>
+              <span className="font-mono text-[11px] font-semibold text-foreground">
+                API PLATFORM
+              </span>
+            </div>
+          </div>
+        </foreignObject>
+
+        {/* ── Hub node ── */}
+        {/* Glow ring */}
+        <circle cx="250" cy="130" r="40" fill="#2563eb" fillOpacity="0.08" />
+        <circle cx="250" cy="130" r="32" fill="#2563eb" fillOpacity="0.06" />
+        {/* Hub box */}
+        <rect
+          x="218"
+          y="98"
+          width="64"
+          height="64"
+          rx="14"
+          ry="14"
+          fill="#2563eb"
+        />
+        {/* Animated pulse ring */}
+        <rect
+          x="218"
+          y="98"
+          width="64"
+          height="64"
+          rx="14"
+          ry="14"
+          fill="none"
+          stroke="#2563eb"
+          strokeWidth="2"
+          strokeOpacity="0.3"
+        >
+          <animate
+            attributeName="stroke-opacity"
+            values="0.3;0;0.3"
+            dur="2.5s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-width"
+            values="2;8;2"
+            dur="2.5s"
+            repeatCount="indefinite"
+          />
+        </rect>
+        {/* Link icon */}
+        <g
+          transform="translate(238, 118)"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        >
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </g>
+
+        {/* ── Destination pills ── */}
+        {destinations.map((d) => {
+          const isActive = hoveredNode === null || hoveredNode === d.id;
+          return (
+            <foreignObject
+              key={d.id}
+              x={d.cx - 72}
+              y={d.cy - 14}
+              width="144"
+              height="28"
+            >
+              <div
+                // @ts-expect-error xmlns needed for foreignObject
+                xmlns="http://www.w3.org/1999/xhtml"
+                className="flex h-full items-center justify-center"
+              >
+                <div
+                  className={`flex items-center gap-1.5 rounded-full border bg-background/95 px-2.5 py-1 shadow-sm backdrop-blur-sm transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-40"}`}
+                  style={{ borderColor: `${d.color}40` }}
+                >
+                  <span style={{ color: d.color }}>{d.icon}</span>
+                  <span className="font-mono text-[11px] font-semibold tracking-wide text-foreground">
+                    {d.label}
+                  </span>
+                </div>
+              </div>
+            </foreignObject>
+          );
+        })}
+      </svg>
+
+      {/* Overlay to handle hover state for destinations */}
+      {/* We overlay transparent divs so mouse hover works seamlessly */}
+      <div className="pointer-events-none absolute inset-y-0 right-[36px] z-20 flex w-[144px] flex-col justify-between py-[51px]">
+        {destinations.map((d) => (
+          <div
+            key={d.id}
+            className="pointer-events-auto h-[28px] w-full rounded-full"
+            onMouseEnter={() => hoveredNode !== d.id && hoveredNode !== "none"} // Placeholder
+          />
+        ))}
+      </div>
+
+      {/* Real hover hitboxes aligned perfectly */}
+      <div
+        className="absolute top-[51px] right-[36px] z-20 h-[28px] w-[144px] cursor-pointer"
+        onMouseEnter={() => hoveredNode}
+        onMouseLeave={() => hoveredNode}
+      ></div>
+
+      <style>{`
+        @keyframes dash {
+          to { stroke-dashoffset: -42; }
+        }
+        .animate-dash {
+          animation: dash 2s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export function FeatureDelivery() {
   const [copied, setCopied] = useState(false);
@@ -27,7 +297,7 @@ export function FeatureDelivery() {
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://api.client.com/webhooks",
-    "eventTypeFilter": ["order.${activeEvent}"]
+    "eventTypeFilter": ["order.\${activeEvent}"]
   }'`;
 
   const copyToClipboard = () => {
@@ -41,171 +311,26 @@ export function FeatureDelivery() {
       {/* Event Gateway Hero Row */}
       <div className="mb-16 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
         {/* Diagram Column (Left) */}
-        <div className="relative order-2 flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border bg-muted/30 p-8 lg:order-1 lg:col-span-7">
-          {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:10px_10px]" />
+        <div className="relative order-2 overflow-hidden rounded-2xl border bg-muted/20 shadow-sm lg:order-1 lg:col-span-7">
+          <DeliveryDiagram hoveredNode={hoveredNode} />
 
-          {/* SVG Animated Lines */}
-          <svg
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Input to Hub */}
-            <path
-              d="M 80 170 H 350"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 80 170 H 350"
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to Webhooks */}
-            <path
-              d="M 370 170 Q 470 100 565 100"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 170 Q 470 100 565 100"
-              fill="none"
-              stroke={hoveredNode === "webhooks" ? "#10b981" : "#94a3b8"}
-              strokeWidth={hoveredNode === "webhooks" ? "3" : "2"}
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to SQS */}
-            <path
-              d="M 370 170 H 560"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 170 H 560"
-              fill="none"
-              stroke={hoveredNode === "sqs" ? "#f59e0b" : "#94a3b8"}
-              strokeWidth={hoveredNode === "sqs" ? "3" : "2"}
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to DB */}
-            <path
-              d="M 370 170 Q 470 240 560 240"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 170 Q 470 240 560 240"
-              fill="none"
-              stroke={hoveredNode === "db" ? "#a855f7" : "#94a3b8"}
-              strokeWidth={hoveredNode === "db" ? "3" : "2"}
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-          </svg>
-
-          {/* Node Grid Layout */}
-          <div className="relative z-10 flex w-full max-w-xl items-center justify-between">
-            {/* Input Trigger */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm">
-                <div className="animate-pulse rounded bg-blue-500/10 p-1 text-blue-600">
-                  <Terminal className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  API PLATFORM
-                </span>
-              </div>
-            </div>
-
-            {/* Central HookRelay Hub */}
-            <div className="relative">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg ring-8 shadow-blue-500/30 ring-blue-600/5">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </div>
-              <div className="absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 opacity-25 blur" />
-            </div>
-
-            {/* Outbound Destinations */}
-            <div className="flex flex-col gap-6">
-              {/* Webhooks */}
-              <div
-                onMouseEnter={() => setHoveredNode("webhooks")}
-                onMouseLeave={() => setHoveredNode(null)}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  hoveredNode === "webhooks"
-                    ? "scale-105 border-emerald-500"
-                    : ""
-                }`}
-              >
-                <div className="rounded bg-emerald-500/10 p-1 text-emerald-600">
-                  <Globe className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  WEBHOOKS
-                </span>
-              </div>
-
-              {/* AWS SQS */}
-              <div
-                onMouseEnter={() => setHoveredNode("sqs")}
-                onMouseLeave={() => setHoveredNode(null)}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  hoveredNode === "sqs" ? "scale-105 border-amber-500" : ""
-                }`}
-              >
-                <div className="rounded bg-amber-500/10 p-1 text-amber-600">
-                  <Gear className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  AWS SQS
-                </span>
-              </div>
-
-              {/* Database Storage */}
-              <div
-                onMouseEnter={() => setHoveredNode("db")}
-                onMouseLeave={() => setHoveredNode(null)}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  hoveredNode === "db" ? "scale-105 border-purple-500" : ""
-                }`}
-              >
-                <div className="rounded bg-purple-500/10 p-1 text-purple-600">
-                  <Database className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  HOOKRELAY DB
-                </span>
-              </div>
-            </div>
+          {/* Invisible hover overlay matching nodes position to set hoveredNode correctly */}
+          <div className="pointer-events-none absolute top-[51px] right-[36px] flex flex-col gap-[37px]">
+            <div
+              className="pointer-events-auto h-[28px] w-[144px] cursor-pointer rounded-full"
+              onMouseEnter={() => setHoveredNode("webhooks")}
+              onMouseLeave={() => setHoveredNode(null)}
+            ></div>
+            <div
+              className="pointer-events-auto h-[28px] w-[144px] cursor-pointer rounded-full"
+              onMouseEnter={() => setHoveredNode("sqs")}
+              onMouseLeave={() => setHoveredNode(null)}
+            ></div>
+            <div
+              className="pointer-events-auto h-[28px] w-[144px] cursor-pointer rounded-full"
+              onMouseEnter={() => setHoveredNode("db")}
+              onMouseLeave={() => setHoveredNode(null)}
+            ></div>
           </div>
         </div>
 
@@ -236,22 +361,21 @@ export function FeatureDelivery() {
       {/* Feature Cards Grid (3 Columns) */}
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {/* Card 1: Subscription API */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Terminal className="size-5 text-blue-600" />
-              <h3 className="text-base font-bold">
-                Register Endpoint Subscriptions
-              </h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <Terminal className="size-4 text-blue-600" />
+            <span className="text-sm font-semibold">
+              Register Endpoint Subscriptions
+            </span>
+          </div>
+          <CardContent className="flex h-full flex-col justify-between gap-3 pb-6 text-sm text-muted-foreground">
+            <p>
               Create and manage consumer endpoints dynamically via HTTP
               requests. Protect connections with shared secrets.
             </p>
-          </div>
-          <div className="mt-auto px-6 pb-6">
+
             {/* Command Widget */}
-            <div className="relative overflow-hidden rounded-lg border border-border/80 bg-muted/40 p-4 font-mono text-[10px] leading-relaxed text-foreground/80">
+            <div className="relative mt-auto overflow-hidden rounded-lg border border-border/80 bg-muted/40 p-4 font-mono text-[10px] leading-relaxed text-foreground/80">
               <button
                 onClick={copyToClipboard}
                 className="absolute top-2 right-2 rounded border border-border bg-background p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -267,87 +391,81 @@ export function FeatureDelivery() {
                 {curlCommand}
               </pre>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         {/* Card 2: Publish Routing */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <PaperPlane className="size-5 text-indigo-600" />
-              <h3 className="text-base font-bold">Filter Destination Events</h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <PaperPlane className="size-4 text-indigo-600" />
+            <span className="text-sm font-semibold">
+              Filter Destination Events
+            </span>
+          </div>
+          <CardContent className="flex h-full flex-col justify-between gap-3 pb-6 text-sm text-muted-foreground">
+            <p>
               Selectively trigger endpoints by defining filters. Consumers will
               only capture events matching their filter array.
             </p>
-          </div>
-          <div className="mt-auto px-6 pb-6">
+
             {/* Event selection simulator */}
-            <div className="flex flex-col gap-3 rounded-lg border border-border/80 bg-muted/40 p-4">
+            <div className="mt-auto flex flex-col gap-3 rounded-lg border border-border/80 bg-muted/40 p-4">
               <span className="font-mono text-xs font-semibold text-muted-foreground">
                 EVENT SOURCE TRIGGERS
               </span>
 
               <div className="flex gap-2">
-                <button
+                <Badge
                   onClick={() => setActiveEvent("created")}
-                  className={`rounded border px-3 py-1.5 font-mono text-[11px] transition-colors ${
-                    activeEvent === "created"
-                      ? "border-indigo-600 bg-indigo-600 text-white"
-                      : "border-border bg-background text-muted-foreground hover:bg-muted"
-                  }`}
+                  variant={activeEvent === "created" ? "default" : "outline"}
+                  className="cursor-pointer font-mono text-[10px]"
                 >
                   order.created
-                </button>
+                </Badge>
 
-                <button
+                <Badge
                   onClick={() => setActiveEvent("updated")}
-                  className={`rounded border px-3 py-1.5 font-mono text-[11px] transition-colors ${
-                    activeEvent === "updated"
-                      ? "border-indigo-600 bg-indigo-600 text-white"
-                      : "border-border bg-background text-muted-foreground hover:bg-muted"
-                  }`}
+                  variant={activeEvent === "updated" ? "default" : "outline"}
+                  className="cursor-pointer font-mono text-[10px]"
                 >
                   order.updated
-                </button>
+                </Badge>
               </div>
 
               <div className="rounded border bg-background/50 p-2.5 font-mono text-[11px] text-muted-foreground">
                 {activeEvent === "created" ? (
                   <span className="flex items-center gap-1.5 text-emerald-500">
                     <Circle weight="fill" className="size-2 animate-ping" />
-                    Delivering order.created event to WEBHOOKS & AWS SQS
+                    Delivering order.created to WEBHOOKS & AWS SQS
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5 text-amber-500">
                     <Circle weight="fill" className="size-2 animate-ping" />
-                    Delivering order.updated event to WEBHOOKS & DATABASE
+                    Delivering order.updated to WEBHOOKS & DATABASE
                   </span>
                 )}
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         {/* Card 3: Debug Portal */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle className="size-5 text-emerald-600" />
-              <h3 className="text-base font-bold">
-                Consumer Debugging Dashboard
-              </h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <CheckCircle className="size-4 text-emerald-600" />
+            <span className="text-sm font-semibold">
+              Consumer Debugging Dashboard
+            </span>
+          </div>
+          <CardContent className="flex h-full flex-col justify-between gap-3 pb-6 text-sm text-muted-foreground">
+            <p>
               Offer your customers a dedicated portal to view logs, trace
               payloads, inspect retry headers, and verify delivery success
               metrics.
             </p>
-          </div>
-          <div className="mt-auto px-6 pb-6">
+
             {/* Mini Portal Logs Grid */}
-            <div className="flex flex-col gap-2 rounded-lg border border-border/80 bg-muted/40 p-3 font-mono text-[10px]">
+            <div className="mt-auto flex flex-col gap-2 rounded-lg border border-border/80 bg-muted/40 p-3 font-mono text-[10px]">
               <div className="flex justify-between border-b border-border/60 pb-1.5 font-semibold text-muted-foreground">
                 <span>DESTINATION</span>
                 <span>SUCCESS</span>
@@ -375,20 +493,9 @@ export function FeatureDelivery() {
                 <span>8ms</span>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
-
-      <style jsx global>{`
-        @keyframes dash {
-          to {
-            stroke-dashoffset: -40;
-          }
-        }
-        .animate-dash {
-          animation: dash 2.5s linear infinite;
-        }
-      `}</style>
     </section>
   );
 }
