@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/api/useAuth";
 import { Button } from "@/components/ui/button";
+import { GithubLogoIcon, XLogoIcon } from "@phosphor-icons/react";
 
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -21,15 +22,15 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "fixed top-0 w-full z-50 transition-colors duration-300 border-b border-transparent",
+        "fixed top-0 z-50 w-full border-b border-transparent transition-colors duration-300",
         isScrolled
-          ? "bg-background/80 backdrop-blur-md border-border shadow-sm"
+          ? "border-border bg-background/80 shadow-sm backdrop-blur-md"
           : "bg-transparent"
       )}
     >
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-bold text-xl flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -49,6 +50,12 @@ export function SiteHeader() {
           HookRelay
         </Link>
         <nav className="flex items-center gap-4">
+          <Link href="https://github.com/SoloDevAbu/HookRelay" target="_blank">
+            <GithubLogoIcon className="size-5" />
+          </Link>
+          <Link href="https://x.com/AbuBakkar2502" target="_blank">
+            <XLogoIcon className="size-5" />
+          </Link>
           {!isLoading && (
             <>
               {user ? (
