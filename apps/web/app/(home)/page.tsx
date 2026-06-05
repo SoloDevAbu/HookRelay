@@ -1,6 +1,6 @@
 import React from "react";
 import { HeroSection } from "@/components/marketing/HeroSection";
-import { LogosMarquee } from "@/components/marketing/LogosMarquee";
+import { BenchmarkingSection } from "@/components/marketing/BenchmarkingSection";
 import { FeatureGateway } from "@/components/marketing/FeatureGateway";
 import { FeatureDelivery } from "@/components/marketing/FeatureDelivery";
 import { Footer } from "@/components/marketing/Footer";
@@ -17,8 +17,8 @@ export default function MarketingPage() {
       {/* Hero Banner Section */}
       <HeroSection />
 
-      {/* Integration Logos Marquee */}
-      <LogosMarquee />
+      {/* Performance & k6 Benchmarks */}
+      <BenchmarkingSection />
 
       {/* Event Gateway (Inbound Ingestion) */}
       <div id="features" className="w-full">
