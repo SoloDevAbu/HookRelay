@@ -27,56 +27,49 @@ HookRelay accepts events from producers via a REST API, fans them out to registe
 
 ## Architecture
 
-```
-                           ┌─────────────┐
-                           │  Producers  │
-                           └──────┬──────┘
-                                  │  POST /events
-                                  ▼
-                        ┌───────────────────┐
-                        │   API (Fastify)   │
-                        │                   │
-                        │  ┌─────────────┐  │
-                        │  │ Tenant Auth  │◄─┼── Redis (cached)
-                        │  │ Rate Limiter │◄─┼── Redis (Lua INCR)
-                        │  │ Idempotency  │◄─┼── Redis (GET)
-                        │  └──────┬──────┘  │
-                        │         │ LPUSH   │
-                        └─────────┼─────────┘
-                                  │
-                                  ▼
-                        ┌───────────────────┐
-                        │   Redis Buffer    │
-                        │  (ingest list)    │
-                        └────────┬──────────┘
-                                 │ RPOP (batches of 100)
-                                 ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                        Worker Process                           │
-│                                                                 │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────┐  │
-│  │  Ingest Worker   │  │  Fanout Worker   │  │  DLQ Worker    │  │
-│  │                  │  │                  │  │                │  │
-│  │ Batch INSERT     │  │ Resolve          │  │ Move dead      │  │
-│  │ into Postgres    │──▶ endpoints        │  │ deliveries     │  │
-│  │ Bulk enqueue     │  │ Create delivery  │  │                │  │
-│  │ fanout jobs      │  │ rows + jobs      │  └────────────────┘  │
-│  └─────────────────┘  └───────┬──────────┘                      │
-│                               │                                  │
-│                    ┌──────────▼──────────┐                       │
-│                    │  Delivery Workers   │                       │
-│                    │  (per tenant)       │                       │
-│                    │                     │                       │
-│                    │ Circuit breaker     │                       │
-│                    │ HMAC-SHA256 signing │                       │
-│                    │ HTTP delivery       │                       │
-│                    │ Retry scheduling    │                       │
-│                    └──────────┬──────────┘                       │
-└───────────────────────────────┼──────────────────────────────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │  Consumer Endpoints   │
-                    └───────────────────────┘
+```mermaid
+flowchart TD
+    A[Producers] -->|"POST /events\\nX-Api-Key"| API
+
+    subgraph API["API Service - Fastify"]
+        B[Tenant Auth\\nRedis cache 60s TTL] --> C[Rate Limiter\\nLua fixed-window counter]
+        C --> D[Idempotency Check\\nRedis GET]
+        D -->|"LPUSH"| E[(Redis Buffer\\nhookrelay:ingest_buffer)]
+        D -->|"202 Accepted"| RES[Return to Producer]
+    end
+
+    E -->|"Lua BATCH_POP\\nup to 100 at once"| IW
+
+    subgraph WorkerProcess["Worker Process"]
+        IW[Ingest Worker\\npoll loop + BRPOP] -->|"Batch INSERT"| PG[(PostgreSQL)]
+        IW -->|"fanoutQueue.addBulk"| FQ[(Fanout Queue\\nBullMQ/Redis)]
+        IW -->|"Set idempotency keys"| RC[(Redis)]
+
+        FQ --> FW[Fanout Worker\\nconcurrency=10]
+        FW -->|"findEndpoints\\nby tenant + eventType"| PG
+        FW -->|"batchInsertDeliveries"| PG
+        FW -->|"deliveryQueue.addBulk"| DQ["Per-Tenant Delivery Queues\\nBullMQ/Redis\\none queue per tenant"]
+        FW -->|"Pub/Sub publish"| PS[(Redis Pub/Sub\\nWORKER_CHANNEL)]
+
+        PS --> DWM[Delivery Worker Manager\\nbootstrap + subscribe]
+        DWM -->|"spin up new worker"| DW
+
+        DQ --> DW[Delivery Workers\\nconcurrency=50 per tenant]
+        DW -->|"shouldAllowRequest"| CB{Circuit Breaker\\nRedis state}
+        CB -->|"open: requeue +30s delay"| DQ
+        CB -->|"closed / half-open"| SIGN[Sign Payload\\nHMAC-SHA256]
+        SIGN --> HTTP[HTTP POST\\nundici with timeout]
+        HTTP -->|"2xx"| SUC[Record Success\\nReset Circuit Breaker]
+        HTTP -->|"non-2xx or timeout"| FAIL[Record Failure\\nUpdate Circuit Breaker]
+        FAIL --> DEC{Max Attempts\\nReached?}
+        DEC -->|"no: schedule retry\\nexponential backoff"| DQ
+        DEC -->|"yes: mark dead"| DEAD[Dead Delivery\\nstatus=dead]
+
+        SUC -->|"insertDeliveryAttempt"| PG
+        FAIL -->|"insertDeliveryAttempt"| PG
+    end
+
+    HTTP -->|"2xx delivered"| CONS[Consumer Endpoints]
 ```
 
 ### Data flow
