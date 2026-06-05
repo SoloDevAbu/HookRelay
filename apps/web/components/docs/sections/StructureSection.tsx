@@ -26,12 +26,20 @@ export function StructureSection() {
 │   ├── worker/                 # Background job worker orchestrators
 │   │   └── src/
 │   │       └── workers/        # BullMQ worker processors (ingest, fanout, delivery, dlq)
-│   └── mock-server/            # Webhook consumer mock server
+│   ├── mock-server/            # Webhook consumer mock server
+│   └── web/                    # Next.js dashboard for tenants and endpoints
+|
 ├── packages/
+|   ├──config/                    # Environment configuration
 │   ├── db/                     # Drizzle ORM schema, push migrations, queries
+│   ├── lib/                    # Redis client, logger (pino), HTTP client (undici)
 │   ├── queue/                  # BullMQ definitions, Redis connection clients
 │   ├── services/               # Ingest, fanout, circuit-breakers, signature validators
 │   └── typescript-config/      # Workspace shared typescript settings
+├── k6/                         # Load test scripts
+├── docker/
+│   ├── Dockerfile.api
+│   └── Dockerfile.worker
 └── docker-compose.yml          # Container configuration`}</pre>
       </div>
     </section>
