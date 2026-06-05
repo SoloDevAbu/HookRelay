@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Funnel,
@@ -16,7 +17,7 @@ import {
   Gear,
 } from "@phosphor-icons/react";
 
-function StoreIcon(props: any) {
+function StoreIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -41,13 +42,218 @@ function StoreIcon(props: any) {
   );
 }
 
+function LinkIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+// Pure declarative SVG diagram — viewBox coordinates matching the screenshot layout precisely
+function GatewayDiagram({ activeSource }: { activeSource: "shopify" | "stripe" | "twilio" }) {
+  // ── Coordinate system: viewBox="0 0 500 260" ──────────────────────
+  // Sources (right-edge of pill): x=118, y=65 / 130 / 195
+  // Hub (left-edge): x=218, center: x=250, y=130. Right-edge: x=282
+  // Destinations (left-edge of pill): x=382, y=65 / 130 / 195
+
+  // Source pill right-edge points
+  const SRC = { shopify: { x: 118, y: 65 }, stripe: { x: 118, y: 130 }, twilio: { x: 118, y: 195 } };
+  // Destination pill left-edge points
+  const DST = { local: { x: 382, y: 65 }, http: { x: 382, y: 130 }, mock: { x: 382, y: 195 } };
+  // Hub edges
+  const HUB_LEFT = { x: 218, y: 130 };
+  const HUB_RIGHT = { x: 282, y: 130 };
+
+  // Cubic bezier: horizontal control points for organic S-curves
+  const curve = (x1: number, y1: number, x2: number, y2: number) => {
+    const cx = (x1 + x2) / 2;
+    return `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
+  };
+
+  const inPaths = [
+    { id: "shopify", d: curve(SRC.shopify.x, SRC.shopify.y, HUB_LEFT.x, HUB_LEFT.y), color: "#96BF48" },
+    { id: "stripe",  d: curve(SRC.stripe.x,  SRC.stripe.y,  HUB_LEFT.x, HUB_LEFT.y), color: "#635BFF" },
+    { id: "twilio",  d: curve(SRC.twilio.x,  SRC.twilio.y,  HUB_LEFT.x, HUB_LEFT.y), color: "#F22F46" },
+  ] as const;
+
+  const outPaths = [
+    { id: "local", d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.local.x, DST.local.y), color: "#10b981" },
+    { id: "http",  d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.http.x,  DST.http.y),  color: "#3b82f6" },
+    { id: "mock",  d: curve(HUB_RIGHT.x, HUB_RIGHT.y, DST.mock.x,  DST.mock.y),  color: "#f59e0b" },
+  ] as const;
+
+  // Source node definitions — pill position: center x=72, y matches SRC y
+  const sources = [
+    { id: "shopify", cx: 72, cy: 65,  color: "#96BF48", icon: <StoreIcon className="size-4" />, label: "shopify" },
+    { id: "stripe",  cx: 72, cy: 130, color: "#635BFF", icon: <Coins className="size-4" />,     label: "stripe"  },
+    { id: "twilio",  cx: 72, cy: 195, color: "#F22F46", icon: <Cpu className="size-4" />,       label: "twilio"  },
+  ] as const;
+
+  // Destination node definitions — pill position: center x=428, y matches DST y
+  const destinations = [
+    { id: "local", cx: 428, cy: 65,  color: "#10b981", icon: <DeviceRotate className="size-3.5" />, label: "LOCAL"    },
+    { id: "http",  cx: 428, cy: 130, color: "#3b82f6", icon: <Globe className="size-3.5" />,        label: "HTTP"     },
+    { id: "mock",  cx: 428, cy: 195, color: "#f59e0b", icon: <Gear className="size-3.5" />,         label: "MOCK API" },
+  ] as const;
+
+  return (
+    <div className="relative flex h-[260px] w-full items-center justify-center overflow-hidden">
+      {/* Background dot grid */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,hsl(var(--border))_1.2px,transparent_1.2px)] bg-[size:20px_20px] opacity-50" />
+
+      {/* Full-width SVG — viewBox matches coordinate system */}
+      <svg
+        viewBox="0 0 500 260"
+        className="absolute inset-0 size-full"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          {/* Soft glow filter for active lines */}
+          <filter id="glow-active" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* ── Inbound paths (sources → hub) ── */}
+        {inPaths.map((p) => {
+          const isActive = activeSource === p.id;
+          return (
+            <g key={p.id}>
+              {/* Ghost track */}
+              <path d={p.d} fill="none" stroke={p.color} strokeWidth="1.5" strokeOpacity="0.12" />
+              {/* Animated dash */}
+              <path
+                d={p.d}
+                fill="none"
+                stroke={p.color}
+                strokeWidth={isActive ? "2" : "1.5"}
+                strokeOpacity={isActive ? "1" : "0.28"}
+                strokeDasharray="5 16"
+                className="animate-dash"
+                filter={isActive ? "url(#glow-active)" : undefined}
+              />
+            </g>
+          );
+        })}
+
+        {/* ── Outbound paths (hub → destinations) ── */}
+        {outPaths.map((p) => (
+          <g key={p.id}>
+            <path d={p.d} fill="none" stroke={p.color} strokeWidth="1.5" strokeOpacity="0.12" />
+            <path
+              d={p.d}
+              fill="none"
+              stroke={p.color}
+              strokeWidth="2"
+              strokeOpacity="0.85"
+              strokeDasharray="5 16"
+              className="animate-dash"
+              filter="url(#glow-active)"
+            />
+          </g>
+        ))}
+
+        {/* ── Source pills (foreignObject for React nodes) ── */}
+        {sources.map((s) => (
+          <foreignObject
+            key={s.id}
+            x={s.cx - 72}
+            y={s.cy - 14}
+            width="144"
+            height="28"
+          >
+            <div
+              // @ts-expect-error xmlns needed for foreignObject
+              xmlns="http://www.w3.org/1999/xhtml"
+              className="flex h-full items-center justify-center"
+            >
+              <div
+                className="flex items-center gap-1.5 rounded-full border bg-background/95 px-2.5 py-1 shadow-sm backdrop-blur-sm"
+                style={{ borderColor: `${s.color}40` }}
+              >
+                <span style={{ color: s.color }}>{s.icon}</span>
+                <span className="font-mono text-[11px] font-semibold text-foreground">{s.label}</span>
+              </div>
+            </div>
+          </foreignObject>
+        ))}
+
+        {/* ── Hub node ── */}
+        {/* Glow ring */}
+        <circle cx="250" cy="130" r="40" fill="#2563eb" fillOpacity="0.08" />
+        <circle cx="250" cy="130" r="32" fill="#2563eb" fillOpacity="0.06" />
+        {/* Hub box */}
+        <rect x="218" y="98" width="64" height="64" rx="14" ry="14" fill="#2563eb" />
+        {/* Animated pulse ring */}
+        <rect x="218" y="98" width="64" height="64" rx="14" ry="14" fill="none" stroke="#2563eb" strokeWidth="2" strokeOpacity="0.3">
+          <animate attributeName="stroke-opacity" values="0.3;0;0.3" dur="2.5s" repeatCount="indefinite" />
+          <animate attributeName="stroke-width" values="2;8;2" dur="2.5s" repeatCount="indefinite" />
+        </rect>
+        {/* Link icon — two arc paths centered in hub */}
+        <g transform="translate(238, 118)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </g>
+
+        {/* ── Destination pills ── */}
+        {destinations.map((d) => (
+          <foreignObject
+            key={d.id}
+            x={d.cx - 72}
+            y={d.cy - 14}
+            width="144"
+            height="28"
+          >
+            <div
+              // @ts-expect-error xmlns needed for foreignObject
+              xmlns="http://www.w3.org/1999/xhtml"
+              className="flex h-full items-center justify-center"
+            >
+              <div
+                className="flex items-center gap-1.5 rounded-full border bg-background/95 px-2.5 py-1 shadow-sm backdrop-blur-sm"
+                style={{ borderColor: `${d.color}40` }}
+              >
+                <span style={{ color: d.color }}>{d.icon}</span>
+                <span className="font-mono text-[11px] font-semibold tracking-wide text-foreground">{d.label}</span>
+              </div>
+            </div>
+          </foreignObject>
+        ))}
+      </svg>
+
+      <style>{`
+        @keyframes dash {
+          to { stroke-dashoffset: -42; }
+        }
+        .animate-dash {
+          animation: dash 2s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export function FeatureGateway() {
-  const [retryState, setRetryState] = useState<"idle" | "loading" | "success">(
-    "idle"
-  );
-  const [activeTab, setActiveTab] = useState<"shopify" | "stripe" | "twilio">(
-    "shopify"
-  );
+  const [retryState, setRetryState] = useState<"idle" | "loading" | "success">("idle");
+  const [activeSource, setActiveSource] = useState<"shopify" | "stripe" | "twilio">("shopify");
 
   const handleRetry = () => {
     setRetryState("loading");
@@ -59,8 +265,11 @@ export function FeatureGateway() {
 
   return (
     <section className="mx-auto w-full max-w-7xl border-t border-border/50 px-4 py-20">
-      {/* Event Gateway Hero Row */}
-      <div className="mb-16 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+
+      {/* Hero Row */}
+      <div className="mb-12 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+
+        {/* Left: Copy */}
         <div className="flex flex-col justify-center text-left lg:col-span-5">
           <div className="mb-2 font-mono text-xs font-bold tracking-widest text-blue-600 uppercase">
             Receive Webhooks
@@ -70,10 +279,10 @@ export function FeatureGateway() {
           </h2>
           <p className="mb-8 text-lg leading-relaxed text-muted-foreground">
             Ingest and route inbound webhooks and events before they hit your
-            application servers. Rest assured knowing every single payload is
-            safely buffered with absolute observability and control.
+            application servers. Every payload is safely buffered with full
+            observability and control.
           </p>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <Button className="rounded-full bg-blue-600 font-semibold text-white hover:bg-blue-700">
               Start Ingesting
             </Button>
@@ -83,308 +292,93 @@ export function FeatureGateway() {
           </div>
         </div>
 
-        {/* Diagram Column */}
-        <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border bg-muted/30 p-8 lg:col-span-7">
-          {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:10px_10px]" />
-
-          {/* SVG Animated Lines */}
-          <svg
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Shopify to Hub */}
-            <path
-              id="shopify-path"
-              d="M 135 100 Q 230 90 330 160"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 135 100 Q 230 90 330 160"
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Stripe to Hub */}
-            <path
-              id="stripe-path"
-              d="M 140 165 H 330"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 140 165 H 330"
-              fill="none"
-              stroke="#6366f1"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Twilio to Hub */}
-            <path
-              id="twilio-path"
-              d="M 140 235 Q 230 240 330 170"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 140 235 Q 230 240 330 170"
-              fill="none"
-              stroke="#f43f5e"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to Local */}
-            <path
-              d="M 370 160 Q 470 90 565 100"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 160 Q 470 90 565 100"
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to HTTP */}
-            <path
-              d="M 370 165 H 560"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 165 H 560"
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-
-            {/* Hub to Mock API */}
-            <path
-              d="M 370 170 Q 470 240 560 235"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-blue-500/20"
-            />
-            <path
-              d="M 370 170 Q 470 240 560 235"
-              fill="none"
-              stroke="#f59e0b"
-              strokeWidth="2"
-              strokeDasharray="6 20"
-              className="animate-dash"
-            />
-          </svg>
-
-          {/* Node Grid Layout */}
-          <div className="relative z-10 flex w-full max-w-xl items-center justify-between">
-            {/* Inbound Sources */}
-            <div className="flex flex-col gap-6">
-              {/* Shopify */}
-              <div
-                onClick={() => setActiveTab("shopify")}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  activeTab === "shopify"
-                    ? "scale-105 border-blue-500 ring-2 ring-blue-500/10"
-                    : "hover:border-border-hover"
-                }`}
-              >
-                <div className="rounded bg-[#96BF48]/10 p-1 text-[#96BF48]">
-                  <StoreIcon className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  shopify
-                </span>
-              </div>
-
-              {/* Stripe */}
-              <div
-                onClick={() => setActiveTab("stripe")}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  activeTab === "stripe"
-                    ? "scale-105 border-indigo-500 ring-2 ring-indigo-500/10"
-                    : "hover:border-border-hover"
-                }`}
-              >
-                <div className="rounded bg-[#635BFF]/10 p-1 text-[#635BFF]">
-                  <Coins className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  stripe
-                </span>
-              </div>
-
-              {/* Twilio */}
-              <div
-                onClick={() => setActiveTab("twilio")}
-                className={`flex cursor-pointer items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-all duration-200 ${
-                  activeTab === "twilio"
-                    ? "scale-105 border-red-500 ring-2 ring-red-500/10"
-                    : "hover:border-border-hover"
-                }`}
-              >
-                <div className="rounded bg-[#F22F46]/10 p-1 text-[#F22F46]">
-                  <Cpu className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  twilio
-                </span>
-              </div>
-            </div>
-
-            {/* Central HookRelay Hub */}
-            <div className="relative">
-              <div className="flex size-14 animate-pulse items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg ring-8 shadow-blue-500/30 ring-blue-600/5">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </div>
-              {/* Pulsing glow halos */}
-              <div className="absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 opacity-25 blur" />
-            </div>
-
-            {/* Outbound Destinations */}
-            <div className="flex flex-col gap-6">
-              {/* Local */}
-              <div className="hover:border-border-hover flex items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-colors">
-                <div className="rounded bg-emerald-500/10 p-1 text-emerald-600">
-                  <DeviceRotate className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  LOCAL
-                </span>
-              </div>
-
-              {/* HTTP */}
-              <div className="hover:border-border-hover flex items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-colors">
-                <div className="rounded bg-blue-500/10 p-1 text-blue-600">
-                  <Globe className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  HTTP
-                </span>
-              </div>
-
-              {/* Mock API */}
-              <div className="hover:border-border-hover flex items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-sm transition-colors">
-                <div className="rounded bg-amber-500/10 p-1 text-amber-600">
-                  <Gear className="size-4" />
-                </div>
-                <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-                  MOCK API
-                </span>
-              </div>
-            </div>
-          </div>
+        {/* Right: Diagram */}
+        <div className="relative overflow-hidden rounded-2xl border bg-muted/20 shadow-sm lg:col-span-7">
+          <GatewayDiagram activeSource={activeSource} />
         </div>
       </div>
 
-      {/* Feature Cards Grid (3 Columns) */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {/* Card 1: Filter, transform, and route */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Funnel className="size-5 text-blue-600" />
-              <h3 className="text-base font-bold">
-                Filter, transform, and route
-              </h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
-              Apply powerful filter routing rules so endpoints only receive
-              events they subscribe to.
-            </p>
+      {/* Feature Cards Grid */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+        {/* Card 1: Filter */}
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <Funnel className="size-4 text-blue-600" />
+            <span className="text-sm font-semibold">Filter, transform, and route</span>
           </div>
-          <div className="mt-auto px-6 pb-6">
-            {/* Editor Block */}
-            <div className="overflow-hidden rounded-lg border border-border/80 bg-muted/40 p-4 font-mono text-xs leading-relaxed text-foreground/80">
-              <div className="mb-2 flex justify-between border-b border-border/50 pb-1.5 text-blue-500/60">
-                <span>FILTERING {activeTab.toUpperCase()} &rarr; LOCAL...</span>
-                <span className="size-2 rounded-full bg-emerald-500" />
+          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+            <p>Apply powerful filter rules so endpoints only receive events they subscribed to.</p>
+
+            {/* Source selector pills */}
+            <div className="flex flex-wrap gap-2">
+              {(["shopify", "stripe", "twilio"] as const).map((s) => (
+                <Badge
+                  key={s}
+                  variant={activeSource === s ? "default" : "outline"}
+                  className="cursor-pointer rounded-full font-mono text-xs"
+                  onClick={() => setActiveSource(s)}
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Code preview */}
+            <div className="overflow-hidden rounded-lg border bg-muted/50 p-3 font-mono text-xs leading-relaxed">
+              <div className="mb-1.5 flex items-center justify-between border-b border-border/50 pb-1 text-[10px] text-blue-500/70">
+                <span>FILTERING {activeSource.toUpperCase()} → LOCAL</span>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
               </div>
-              <pre className="text-blue-600/80">
-                {`{
+              <pre className="text-blue-600/80">{`{
   "eventTypeFilter": [
-    "${activeTab === "shopify" ? "order.created" : activeTab === "stripe" ? "payment.succeeded" : "sms.delivered"}"
+    "${activeSource === "shopify" ? "order.created" : activeSource === "stripe" ? "payment.succeeded" : "sms.delivered"}"
   ]
-}`}
-              </pre>
+}`}</pre>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
-        {/* Card 2: Queue with rate control */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Queue className="size-5 text-indigo-600" />
-              <h3 className="text-base font-bold">Queue with rate control</h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
-              Smooth out spike traffic and rate limit outbound deliveries.
-              Protect downstream databases.
-            </p>
+        {/* Card 2: Queue */}
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <Queue className="size-4 text-indigo-600" />
+            <span className="text-sm font-semibold">Queue with rate control</span>
           </div>
-          <div className="mt-auto px-6 pb-6">
-            {/* Queue Visualization */}
-            <div className="flex flex-col gap-3 rounded-lg border border-border/80 bg-muted/40 p-4">
+          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+            <p>Smooth spike traffic and rate-limit outbound deliveries. Protect downstream services.</p>
+
+            {/* Queue visual */}
+            <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 p-3">
               <div className="flex items-center justify-between font-mono text-xs font-semibold text-muted-foreground">
                 <span>DELIVERY RATE</span>
                 <span className="font-bold text-indigo-600">150 req/min</span>
               </div>
-              <div className="relative flex h-8 w-full items-center gap-1 overflow-hidden rounded-md bg-border/40 p-1">
-                {/* Visual queued message blocks */}
-                <div className="flex h-full w-8 animate-pulse items-center justify-center rounded-sm border border-blue-500/50 bg-blue-600/25 font-mono text-[9px] text-blue-600">
-                  Q
-                </div>
-                <div className="flex h-full w-8 animate-pulse items-center justify-center rounded-sm border border-indigo-500/50 bg-indigo-600/25 font-mono text-[9px] text-indigo-600">
-                  Q
-                </div>
-                <div className="flex h-full w-8 animate-pulse items-center justify-center rounded-sm border border-purple-500/50 bg-purple-600/25 font-mono text-[9px] text-purple-600">
-                  Q
-                </div>
-                <div className="flex h-full w-8 items-center justify-center rounded-sm bg-border/50 font-mono text-[9px] text-muted-foreground">
-                  ..
-                </div>
-
-                {/* Slow queue delivery animation indicators */}
-                <div className="absolute right-2 flex items-center gap-0.5">
-                  <span className="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <div className="relative flex h-7 w-full items-center gap-1 overflow-hidden rounded-md bg-border/30 px-1">
+                {[
+                  { color: "blue", label: "Q" },
+                  { color: "indigo", label: "Q" },
+                  { color: "purple", label: "Q" },
+                  { color: "muted", label: "·" },
+                ].map((b, i) => (
+                  <div
+                    key={i}
+                    className={`flex h-5 w-7 shrink-0 items-center justify-center rounded font-mono text-[9px] ${
+                      b.color === "blue"
+                        ? "border border-blue-500/40 bg-blue-600/20 text-blue-600 animate-pulse"
+                        : b.color === "indigo"
+                          ? "border border-indigo-500/40 bg-indigo-600/20 text-indigo-600 animate-pulse"
+                          : b.color === "purple"
+                            ? "border border-purple-500/40 bg-purple-600/20 text-purple-600 animate-pulse"
+                            : "bg-border/50 text-muted-foreground"
+                    }`}
+                  >
+                    {b.label}
+                  </div>
+                ))}
+                <div className="absolute right-1.5 flex items-center gap-0.5">
+                  <span className="size-1.5 animate-ping rounded-full bg-emerald-500" />
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
                 </div>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/30">
@@ -394,86 +388,67 @@ export function FeatureGateway() {
                 />
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
-        {/* Card 3: Auto-detect issues and replay */}
-        <Card className="relative flex flex-col justify-between overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <ArrowClockwise className="size-5 text-emerald-600" />
-              <h3 className="text-base font-bold">
-                Auto-detect issues & retry
-              </h3>
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground">
-              Track request statuses instantly. Automatically retries events
-              with exponential backoff on failure.
-            </p>
+        {/* Card 3: Retry */}
+        <Card className="flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md">
+          <div className="flex flex-row items-center gap-2 px-4 pt-4 pb-2">
+            <ArrowClockwise className="size-4 text-emerald-600" />
+            <span className="text-sm font-semibold">Auto-detect issues &amp; retry</span>
           </div>
-          <div className="mt-auto px-6 pb-6">
-            {/* Failure Box */}
-            <div className="flex flex-col gap-3 rounded-lg border border-red-200/50 bg-red-500/5 p-4 dark:border-red-950/40">
+          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+            <p>Track request statuses instantly. Retry events automatically with fixed backoff on failure.</p>
+
+            {/* Error box */}
+            <div className="flex flex-col gap-3 rounded-lg border border-red-200/50 bg-red-500/5 p-3 dark:border-red-950/40">
               <div className="flex items-center justify-between font-mono text-xs font-semibold text-red-600 dark:text-red-400">
                 <span className="flex items-center gap-1.5">
-                  <XCircle className="size-4" />
+                  <XCircle className="size-3.5" />
                   HTTP 502 Bad Gateway
                 </span>
-                <span>Attempts: 3</span>
+                <Badge variant="outline" className="font-mono text-[10px] text-red-500 border-red-300/50">
+                  Attempts: 3
+                </Badge>
               </div>
               <div className="font-mono text-[10px] leading-normal break-all text-muted-foreground">
                 {`{"type": "delivery_failed", "url": "https://api.myapp.com/webhooks"}`}
               </div>
-
               <Button
                 onClick={handleRetry}
                 disabled={retryState === "loading"}
-                className={`h-8 w-full rounded border py-1.5 font-mono text-xs transition-all ${
+                variant="outline"
+                className={`h-7 w-full rounded font-mono text-xs transition-all ${
                   retryState === "success"
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10"
-                    : "border-border bg-background text-foreground hover:bg-muted"
+                    : ""
                 }`}
               >
                 {retryState === "idle" && (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <ArrowClockwise className="size-3.5" />
+                  <span className="flex items-center gap-1.5">
+                    <ArrowClockwise className="size-3" />
                     Retry Event
                   </span>
                 )}
                 {retryState === "loading" && (
-                  <span className="flex animate-spin items-center justify-center gap-1.5">
-                    <ArrowClockwise className="size-3.5" />
-                  </span>
+                  <ArrowClockwise className="size-3 animate-spin" />
                 )}
                 {retryState === "success" && (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <CheckCircle className="size-3.5" />
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle className="size-3" />
                     Replay Successful!
                   </span>
                 )}
               </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
 
-      <style jsx global>{`
-        @keyframes dash {
-          to {
-            stroke-dashoffset: -40;
-          }
-        }
-        .animate-dash {
-          animation: dash 2.5s linear infinite;
-        }
+      <style>{`
         @keyframes progress {
-          0%,
-          100% {
-            width: 30%;
-          }
-          50% {
-            width: 85%;
-          }
+          0%, 100% { width: 30%; }
+          50% { width: 85%; }
         }
       `}</style>
     </section>
