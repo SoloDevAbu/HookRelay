@@ -14,46 +14,47 @@ import {
 
 const architectureDiagram = `
 flowchart TD
-    classDef default fill:transparent,stroke:currentColor,stroke-width:1px,color:currentColor;
-    classDef highlight fill:#2563eb,stroke:none,color:white;
-    classDef db fill:transparent,stroke:#10b981,stroke-width:2px,color:currentColor;
+    A[Producers] -->|"POST /events\\nX-Api-Key"| API
 
-    A[Producers] -->|POST /events| B
-
-    subgraph API["API (Fastify)"]
-        B[Gateway] --> C[Tenant Auth]
-        C --> D[Rate Limiter]
-        D --> E[Idempotency]
+    subgraph API["API Service - Fastify"]
+        B[Tenant Auth\\nRedis cache 60s TTL] --> C[Rate Limiter\\nLua fixed-window counter]
+        C --> D[Idempotency Check\\nRedis GET]
+        D -->|"LPUSH"| E[(Redis Buffer\\nhookrelay:ingest_buffer)]
+        D -->|"202 Accepted"| RES[Return to Producer]
     end
 
-    C -.->|Cache| R[(Redis)]
-    D -.->|Lua INCR| R
-    E -.->|GET| R
-    
-    E -->|LPUSH| F[(Redis Buffer)]
+    E -->|"Lua BATCH_POP\\nup to 100 at once"| IW
 
-    F -->|RPOP batches of 100| G
+    subgraph WorkerProcess["Worker Process"]
+        IW[Ingest Worker\\npoll loop + BRPOP] -->|"Batch INSERT"| PG[(PostgreSQL)]
+        IW -->|"fanoutQueue.addBulk"| FQ[(Fanout Queue\\nBullMQ/Redis)]
+        IW -->|"Set idempotency keys"| RC[(Redis)]
 
-    subgraph Worker["Worker Process"]
-        G[Ingest Worker] -->|Batch INSERT| PG[(PostgreSQL)]
-        G -->|Bulk enqueue| H[Fanout Worker]
-        
-        H -->|Resolve endpoints| PG
-        H -->|Create delivery rows| PG
-        
-        H -->|Schedule jobs| I[Delivery Workers per tenant]
-        
-        I --> J[Circuit breaker]
-        J --> K[HMAC-SHA256 signing]
-        K --> L[HTTP delivery]
-        
-        L -.->|Errors| M[DLQ Worker]
+        FQ --> FW[Fanout Worker\\nconcurrency=10]
+        FW -->|"findEndpoints\\nby tenant + eventType"| PG
+        FW -->|"batchInsertDeliveries"| PG
+        FW -->|"deliveryQueue.addBulk"| DQ["Per-Tenant Delivery Queues\\nBullMQ/Redis\\none queue per tenant"]
+        FW -->|"Pub/Sub publish"| PS[(Redis Pub/Sub\\nWORKER_CHANNEL)]
+
+        PS --> DWM[Delivery Worker Manager\\nbootstrap + subscribe]
+        DWM -->|"spin up new worker"| DW
+
+        DQ --> DW[Delivery Workers\\nconcurrency=50 per tenant]
+        DW -->|"shouldAllowRequest"| CB{Circuit Breaker\\nRedis state}
+        CB -->|"open: requeue +30s delay"| DQ
+        CB -->|"closed / half-open"| SIGN[Sign Payload\\nHMAC-SHA256]
+        SIGN --> HTTP[HTTP POST\\nundici with timeout]
+        HTTP -->|"2xx"| SUC[Record Success\\nReset Circuit Breaker]
+        HTTP -->|"non-2xx or timeout"| FAIL[Record Failure\\nUpdate Circuit Breaker]
+        FAIL --> DEC{Max Attempts\\nReached?}
+        DEC -->|"no: schedule retry\\nexponential backoff"| DQ
+        DEC -->|"yes: mark dead"| DEAD[Dead Delivery\\nstatus=dead]
+
+        SUC -->|"insertDeliveryAttempt"| PG
+        FAIL -->|"insertDeliveryAttempt"| PG
     end
 
-    L -->|Deliver| N[Consumer Endpoints]
-    
-    class A,N highlight
-    class R,PG db
+    HTTP -->|"2xx delivered"| CONS[Consumer Endpoints]
 `;
 
 export function ArchitectureSection() {
@@ -79,27 +80,70 @@ export function ArchitectureSection() {
       </h3>
       <ol className="mb-6 flex list-decimal flex-col gap-2 pl-5 text-sm text-muted-foreground">
         <li>
-          Producers submit events to the gateway via{" "}
+          Producers submit events via{" "}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
             POST /events
+          </code>{" "}
+          with an{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            X-Api-Key
+          </code>{" "}
+          header.
+        </li>
+        <li>
+          The API authenticates (Redis-cached tenant lookup, 60s TTL), applies
+          the Lua fixed-window rate limiter, checks idempotency via Redis GET,
+          then pushes the event to the Redis buffer (
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            LPUSH
+          </code>
+          ) and immediately returns 202.
+        </li>
+        <li>
+          The <strong>Ingest Worker</strong> runs a poll loop with{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            BRPOP
+          </code>{" "}
+          (blocking pop). When data arrives it uses an atomic Lua script (
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            LRANGE + LTRIM
+          </code>
+          ) to pop up to 100 events in a single round-trip, batch-inserts them
+          into PostgreSQL, bulk-enqueues fanout jobs via BullMQ, and sets Redis
+          idempotency keys for successful inserts.
+        </li>
+        <li>
+          The <strong>Fanout Worker</strong> (concurrency=10) reads fanout jobs
+          from BullMQ, queries PostgreSQL for matching active endpoints
+          (respecting{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            eventTypeFilter
+          </code>
+          ), batch-inserts delivery rows, bulk-enqueues delivery jobs into the
+          per-tenant delivery queue, and publishes a notification to Redis
+          Pub/Sub so the Delivery Worker Manager can spin up a new worker for
+          new tenants.
+        </li>
+        <li>
+          <strong>Delivery Workers</strong> (concurrency=50 per tenant) process
+          jobs from per-tenant BullMQ queues. They fetch endpoint config and
+          event payloads from Redis cache (falling back to Postgres), check the
+          circuit breaker state, sign the payload with HMAC-SHA256, and POST to
+          the endpoint URL via{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            undici
           </code>
           .
         </li>
         <li>
-          The API authenticates, rate-limits, checks idempotency, and stores the
-          event in a Redis queue, responding immediately.
-        </li>
-        <li>
-          The <strong>Ingest Worker</strong> processes queue batches, performing
-          bulk SQL inserts to PostgreSQL and BullMQ.
-        </li>
-        <li>
-          The <strong>Fanout Worker</strong> resolves endpoint filters and
-          schedules delivery jobs.
-        </li>
-        <li>
-          <strong>Delivery Workers</strong> sign requests using HMAC-SHA256 and
-          execute delivery calls, respecting circuit breakers.
+          On success: delivery attempt is recorded and circuit breaker is reset.
+          On failure: attempt is recorded, circuit breaker failure count is
+          incremented, and a retry is scheduled with exponential backoff (10s →
+          30s → 1m → 5m → ... → 24h). After max attempts the delivery is marked{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            dead
+          </code>
+          .
         </li>
       </ol>
 

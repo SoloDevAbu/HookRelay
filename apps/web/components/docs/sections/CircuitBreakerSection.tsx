@@ -16,17 +16,13 @@ export function CircuitBreakerSection() {
       </p>
       <ul className="flex list-disc flex-col gap-3 pl-5 text-sm text-muted-foreground">
         <li>
-          <strong>CLOSED</strong>: Normal status. Deliveries run freely.
+          <strong>CLOSED</strong>: Normal operation. Delivery jobs execute immediately.
         </li>
         <li>
-          <strong>OPEN</strong>: Triggered after 5 consecutive endpoint errors.
-          Deliveries bypass the destination and auto-schedule for delayed retry,
-          avoiding server exhaustion.
+          <strong>OPEN</strong>: Triggered after <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">CIRCUIT_BREAKER_THRESHOLD</code> (default 5) consecutive failures. Incoming delivery jobs for this endpoint are requeued into the per-tenant BullMQ queue with a <strong>30-second delay</strong> (no attempt is counted), preventing wasted HTTP calls against a clearly-down endpoint.
         </li>
         <li>
-          <strong>HALF-OPEN</strong>: After a 60-second cooldown, one probe
-          request executes. If it returns 2xx, the circuit closes. If it fails,
-          the circuit re-opens.
+          <strong>HALF-OPEN</strong>: After <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">CIRCUIT_BREAKER_COOLDOWN_MS</code> (default 60s), the state transitions to HALF-OPEN. One probe delivery is allowed through. If it returns 2xx the circuit closes and the failure counter resets. If it fails the circuit re-opens.
         </li>
       </ul>
     </section>
