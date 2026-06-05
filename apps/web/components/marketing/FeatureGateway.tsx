@@ -96,14 +96,14 @@ export function FeatureGateway() {
             {/* Shopify to Hub */}
             <path
               id="shopify-path"
-              d="M 140 70 Q 230 70 330 150"
+              d="M 135 100 Q 230 90 330 160"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 140 70 Q 230 70 330 150"
+              d="M 135 100 Q 230 90 330 160"
               fill="none"
               stroke="#3b82f6"
               strokeWidth="2"
@@ -114,14 +114,14 @@ export function FeatureGateway() {
             {/* Stripe to Hub */}
             <path
               id="stripe-path"
-              d="M 140 160 H 330"
+              d="M 140 165 H 330"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 140 160 H 330"
+              d="M 140 165 H 330"
               fill="none"
               stroke="#6366f1"
               strokeWidth="2"
@@ -132,14 +132,14 @@ export function FeatureGateway() {
             {/* Twilio to Hub */}
             <path
               id="twilio-path"
-              d="M 140 250 Q 230 250 330 170"
+              d="M 140 235 Q 230 240 330 170"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 140 250 Q 230 250 330 170"
+              d="M 140 235 Q 230 240 330 170"
               fill="none"
               stroke="#f43f5e"
               strokeWidth="2"
@@ -149,14 +149,14 @@ export function FeatureGateway() {
 
             {/* Hub to Local */}
             <path
-              d="M 370 160 Q 470 150 560 70"
+              d="M 370 160 Q 470 90 565 100"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 370 160 Q 470 150 560 70"
+              d="M 370 160 Q 470 90 565 100"
               fill="none"
               stroke="#10b981"
               strokeWidth="2"
@@ -166,14 +166,14 @@ export function FeatureGateway() {
 
             {/* Hub to HTTP */}
             <path
-              d="M 370 160 H 560"
+              d="M 370 165 H 560"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 370 160 H 560"
+              d="M 370 165 H 560"
               fill="none"
               stroke="#3b82f6"
               strokeWidth="2"
@@ -183,14 +183,14 @@ export function FeatureGateway() {
 
             {/* Hub to Mock API */}
             <path
-              d="M 370 160 Q 470 170 560 250"
+              d="M 370 170 Q 470 240 560 235"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               className="text-blue-500/20"
             />
             <path
-              d="M 370 160 Q 470 170 560 250"
+              d="M 370 170 Q 470 240 560 235"
               fill="none"
               stroke="#f59e0b"
               strokeWidth="2"
