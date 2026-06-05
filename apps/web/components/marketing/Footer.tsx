@@ -2,7 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { GithubLogo, SlackLogo, PaperPlane } from "@phosphor-icons/react";
+import {
+  GithubLogoIcon,
+  SlackLogo,
+  PaperPlane,
+  XLogoIcon,
+} from "@phosphor-icons/react";
 
 export function Footer() {
   return (
@@ -34,28 +39,15 @@ export function Footer() {
             visibility and observability for external event streams.
           </p>
           <div className="mt-2 flex gap-3 text-muted-foreground">
-            <a
-              href="https://github.com"
+            <Link
+              href="https://github.com/SoloDevAbu/HookRelay"
               target="_blank"
-              rel="noreferrer"
-              className="hover:text-foreground"
             >
-              <GithubLogo className="size-5" />
-            </a>
-            <a
-              href="https://slack.com"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-foreground"
-            >
-              <SlackLogo className="size-5" />
-            </a>
-            <a
-              href="mailto:support@hookrelay.com"
-              className="hover:text-foreground"
-            >
-              <PaperPlane className="size-5" />
-            </a>
+              <GithubLogoIcon className="size-5" />
+            </Link>
+            <Link href="https://x.com/AbuBakkar2502" target="_blank">
+              <XLogoIcon className="size-5" />
+            </Link>
           </div>
         </div>
       </div>
